@@ -14,4 +14,4 @@ Also included is a monome device built for use in PlugData, which can run as a C
 6.  Enter the `sudo` password when prompted.
 7.  Follow any final instructions (like logging out/rebooting if added to the `uucp` group).
 
-Congratulations, you've packaged your setup!
+Congratulations, you've installed your setup!
