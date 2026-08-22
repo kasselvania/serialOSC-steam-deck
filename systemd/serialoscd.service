@@ -1,0 +1,12 @@
+[Unit]
+Description=SerialOSC supervisor for Monome devices
+Documentation=https://monome.org/docs/serialosc/
+
+[Service]
+Type=simple
+ExecStart=%h/.local/libexec/serialosc/serialoscd
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target
