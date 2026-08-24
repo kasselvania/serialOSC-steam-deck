@@ -45,9 +45,9 @@ serialosc-doctor
 
 With a Monome connected, the report should show its `/dev/serial/by-id/...` path, read/write access, one `serialoscd` supervisor, one detector, and one device worker.
 
-SerialOSC listens for discovery on UDP port 12002. Each connected device receives its own UDP port and is advertised as `_monome-osc._udp` through Zeroconf.
+SerialOSC listens for discovery on UDP port 12002. Each connected device receives its own UDP port and, when the host permits DNS-SD publishing, is advertised as `_monome-osc._udp` through Zeroconf.
 
-Hardware validation covers a legacy Monome 128 connected both directly and through a USB dock. The dock changes the physical USB route, but SerialOSC follows the device's stable serial identity rather than a hardcoded port. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the exact validation boundary.
+Hardware validation covers a legacy Monome 128, a Pico-based Zero/256 in OSC mode, and a classic four-encoder Arc, both individually and in multi-device combinations through a USB dock. The dock can change or briefly reset a physical USB route, but SerialOSC follows stable serial identities rather than hardcoded tty numbers. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the exact tested matrix, dock caveats, and untested boundaries.
 
 ## Physical hardware workbench
 

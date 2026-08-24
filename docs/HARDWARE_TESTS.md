@@ -76,7 +76,7 @@ Run the single-device rows before combinations. Do not infer support for a later
 |---|---|---|
 | S1 | Legacy FTDI Monome 128 only | Stable serial identity; one worker and device port; independent grid light command; key press and release events; clean removal and replug |
 | S2 | Pico-based 256 “Zero” in OSC mode only | First characterize USB, tty, OSC discovery, and Zeroconf path; if SerialOSC-managed, test grid light and key events; otherwise record the boundary and stop rather than claiming SerialOSC support |
-| S3 | Arc only | Stable serial identity; one worker and device port; independent ring command; encoder delta and key events; clean removal and replug |
+| S3 | Arc only | Stable serial identity; one worker and device port; independent ring command; encoder delta; encoder key events only when the hardware has switches; clean removal and replug |
 | M1 | Legacy 128 + Zero | Unique identities and ports; independent lights/events; removing either leaves the other functional |
 | M2 | Legacy 128 + Arc | Unique identities and ports; grid and ring outputs remain isolated; removing either leaves the other functional |
 | M3 | Zero + Arc | Unique identities and ports if both are SerialOSC-managed; independent events/removal |

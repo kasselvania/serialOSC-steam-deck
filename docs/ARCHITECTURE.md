@@ -91,6 +91,35 @@ On 2026-08-24, the same installed binary hashes were exercised after a SteamOS u
 
 The two-grid test exposed and corrected a workbench-only protocol error: cleanup had sent both grid and arc output commands to every device. The modern Zero tolerated the irrelevant ring messages, while the legacy grid continued to send keys but stopped accepting LED output under the test prefix. Direct LED output worked again under the restored `/monome` prefix. That observation is consistent with the cross-capability bytes disrupting the legacy device's command parser, but the firmware internals were not instrumented; the authoritative defect is that the harness sent an output family the target did not support. The workbench now classifies grid versus arc capability before changing settings, sends only the matching output family, refuses cross-capability commands, and fails closed for ambiguous devices. A repeated physical test independently lit each grid, rejected a ring command addressed to the legacy grid, restored both devices' original OSC settings, released the temporary callback port, and left both surfaces dark.
 
+The same installed bytes were then tested with a classic four-encoder Arc and with all three devices together. The final stable mapping was:
+
+| Device | Stable serial identity | Observed tty | Saved device-server UDP port | Reported capability |
+|---|---|---|---:|---|
+| Legacy Monome 128 | `m1000853` | `/dev/ttyUSB0` | 16874 | 16 by 8 grid |
+| Classic Arc | `m1001113` | `/dev/ttyUSB1` | 11564 | Arc; `/sys/size` returned 0 by 0 |
+| Pico Zero/256 in OSC mode | `m2321590` | `/dev/ttyACM1` | 19536 | 16 by 16 grid |
+
+The tty numbers above are observations, not identities. Tests and applications must select the stable serial identity or `/dev/serial/by-id` link because tty numbering can change with enumeration order.
+
+The Arc test independently addressed all four rings and received encoder-delta events from logical encoders 0 through 3. This physical Arc has no encoder push switches, so no `/enc/key` claim is made. Cleanup addressed only rings touched during the session rather than assuming that every Arc has four rings. Disconnect and replug removed and restored only `m1001113`, and its saved UDP port 11564 was reused.
+
+The legacy-plus-Arc row passed independent grid and ring output, legacy key press/release input, Arc encoder input, removal in both directions, saved-port reuse, callback restoration, and dark-surface cleanup. The all-three row passed independent output to each surface and independent input from each device. Removing each of the Zero, legacy grid, and Arc in turn released only that device's UDP port; both surviving devices remained functional. Each removed device then reconnected on its saved port. Every guarded session restored the original OSC prefix, host, and callback port and released its temporary callback socket. The `serialoscd.service` supervisor remained active with `NRestarts=0` throughout.
+
+The standalone Zero-plus-Arc row was not separately run from a clean two-device baseline. That pair was exercised successfully as the two survivors after legacy-grid removal, but this is not recorded as a complete standalone M3 row.
+
+The legacy grid's saved-port conflict test also passed fail-closed. With UDP 16874 deliberately held while the grid was replugged, the worker did not advertise a false ready device or silently choose another port. After a fresh removal, release of the held socket, and replug, the worker recovered on 16874.
+
+The dock produced two distinct transport observations that must not be misattributed to SerialOSC:
+
+- One legacy-grid connection attempt failed before enumeration with USB descriptor errors `-32` and `-71`. No serial identity, tty, or SerialOSC worker existed. Moving the cable to another dock port enumerated `m1000853` normally.
+- Two early legacy-grid insertions caused the dock to remove and re-add the Arc's USB branch. SerialOSC recovered the Arc by stable serial identity on saved port 11564 without restarting the supervisor. A later identical legacy insertion did not reset either surviving device, so the reset is an observed dock transient rather than a deterministic SerialOSC behavior.
+
+An audio cue or physical cable insertion is therefore not evidence of device readiness. The minimum authority is a stable USB serial identity plus tty creation, SerialOSC discovery, `/sys/info`, and a physical input or output observation.
+
+After the SteamOS update, local OSC discovery and all physical tests above passed, but Zeroconf publication remained blocked by the Deck's existing Avahi policy: both service publishing and user-service publishing were disabled in the host configuration. This project does not modify `/etc` to override that policy. Earlier Zeroconf proof on SteamOS 3.7.20 remains valid for that tested configuration; the updated Deck's local OSC success is not a current Zeroconf-publication claim.
+
+The complete 2026-08-24 machine snapshots and human-observation notes are retained on the tested Deck under evidence session `20260824T185710Z-physical-matrix-17911`.
+
 The installed binaries were byte-compared with the staged distributable before this test. Their validated SHA-256 receipts are:
 
 ```text
