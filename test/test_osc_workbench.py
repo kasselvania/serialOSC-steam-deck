@@ -208,6 +208,7 @@ class SessionTests(unittest.TestCase):
                     lambda: fake.state["port"] == session.callback_port
                     and fake.state["prefix"] == "/workbench/m-test-arc"
                 )
+                session.all_off()
                 session.ring("0", "1", "on")
                 with self.assertRaisesRegex(ValueError, "not a grid; command refused"):
                     session.grid("m-test-arc", "on")
@@ -218,6 +219,12 @@ class SessionTests(unittest.TestCase):
             paths = [message[0] for message in fake.received]
             self.assertIn("/workbench/m-test-arc/ring/all", paths)
             self.assertNotIn("/workbench/m-test-arc/grid/led/all", paths)
+            ring_messages = [
+                message
+                for message in fake.received
+                if message[0] == "/workbench/m-test-arc/ring/all"
+            ]
+            self.assertEqual({message[2][0] for message in ring_messages}, {1})
         finally:
             fake.close()
 

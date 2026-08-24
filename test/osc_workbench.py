@@ -15,7 +15,7 @@ import socket
 import struct
 import sys
 import time
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -239,6 +239,7 @@ class SessionDevice:
     original: dict[str, Any]
     prefix: str
     capability: str
+    touched_rings: set[int] = field(default_factory=set)
 
 
 def classify_capability(device: Device, info: dict[str, Any]) -> str:
@@ -340,13 +341,14 @@ class InteractiveSession:
         if not 0 <= ring_number <= 3:
             raise ValueError("ring number must be between 0 and 3")
         self._send(item.device, f"{item.prefix}/ring/all", "ii", (ring_number, value))
+        item.touched_rings.add(ring_number)
 
     def all_off(self) -> None:
         for item in self.session_devices:
             if item.capability == CAPABILITY_GRID:
                 self._send(item.device, f"{item.prefix}/grid/led/all", "i", (0,))
             elif item.capability == CAPABILITY_ARC:
-                for ring_number in range(4):
+                for ring_number in sorted(item.touched_rings):
                     self._send(
                         item.device, f"{item.prefix}/ring/all", "ii", (ring_number, 0)
                     )
@@ -416,7 +418,7 @@ class InteractiveSession:
         print("  devices", flush=True)
         print("  grid <index-or-serial> <on|off>", flush=True)
         print("  ring <index-or-serial> <ring-number> <on|off>", flush=True)
-        print("  all-off", flush=True)
+        print("  all-off  (all grids and arc rings touched by this session)", flush=True)
         print("  quit", flush=True)
 
     def _handle_command(self, line: str) -> None:

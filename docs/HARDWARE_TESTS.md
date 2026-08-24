@@ -64,7 +64,7 @@ all-off
 quit
 ```
 
-The session classifies a device as a grid only when `/sys/size` reports two positive dimensions, or as an arc when SerialOSC's advertised device name contains `arc`. An ambiguous device stops configuration. `grid` refuses arc targets, `ring` refuses grid targets, and `all-off` sends only the output family valid for each device. This boundary is safety-critical: during physical testing, sending arc ring commands to a legacy grid left key input working while LED output stopped until subsequent restoration traffic recovered it. Cross-capability serial output is therefore never a valid probe.
+The session classifies a device as a grid only when `/sys/size` reports two positive dimensions, or as an arc when SerialOSC's advertised device name contains `arc`. An ambiguous device stops configuration. `grid` refuses arc targets, `ring` refuses grid targets, and `all-off` sends only the output family valid for each device. For arcs, cleanup turns off only ring numbers explicitly addressed during that session; it does not assume two-ring or four-ring hardware. This boundary is safety-critical: during physical testing, sending arc ring commands to a legacy grid left key input working while LED output stopped until subsequent restoration traffic recovered it. Cross-capability serial output is therefore never a valid probe.
 
 Normal exit, EOF, Ctrl-C, and partial configuration failure all run cleanup. Cleanup turns test lights off and restores every device's original OSC host, port, and prefix.
 
