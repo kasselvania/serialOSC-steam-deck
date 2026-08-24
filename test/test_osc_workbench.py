@@ -52,11 +52,13 @@ class FakeUDPServer:
 
 
 class FakeDevice:
-    def __init__(self, complete_info: bool = True) -> None:
+    def __init__(
+        self, complete_info: bool = True, size: list[int] | None = None
+    ) -> None:
         self.complete_info = complete_info
         self.state: dict[str, Any] = {
             "id": "m-test-1",
-            "size": [16, 8],
+            "size": [16, 8] if size is None else size,
             "host": "127.0.0.1",
             "port": 9000,
             "prefix": "/monome",
@@ -176,7 +178,9 @@ class SessionTests(unittest.TestCase):
                     and fake.state["prefix"] == "/workbench/m-test-1"
                 )
                 session.grid("0", "on")
-                session.ring("m-test-1", "1", "off")
+                with self.assertRaisesRegex(ValueError, "not an arc; command refused"):
+                    session.ring("m-test-1", "1", "off")
+                session.all_off()
                 session.restore()
                 wait_for(
                     lambda: fake.state["host"] == "127.0.0.1"
@@ -187,7 +191,52 @@ class SessionTests(unittest.TestCase):
 
             paths = [message[0] for message in fake.received]
             self.assertIn("/workbench/m-test-1/grid/led/all", paths)
-            self.assertIn("/workbench/m-test-1/ring/all", paths)
+            self.assertNotIn("/workbench/m-test-1/ring/all", paths)
+        finally:
+            fake.close()
+
+    def test_arc_session_never_sends_grid_commands(self) -> None:
+        fake = FakeDevice(size=[0, 0])
+        try:
+            with tempfile.TemporaryDirectory() as temporary_directory:
+                session = osc.InteractiveSession(
+                    [osc.Device("m-test-arc", "monome arc 4", fake.port)],
+                    Path(temporary_directory) / "events.jsonl",
+                )
+                session.configure()
+                wait_for(
+                    lambda: fake.state["port"] == session.callback_port
+                    and fake.state["prefix"] == "/workbench/m-test-arc"
+                )
+                session.ring("0", "1", "on")
+                with self.assertRaisesRegex(ValueError, "not a grid; command refused"):
+                    session.grid("m-test-arc", "on")
+                session.all_off()
+                session.restore()
+                session.close()
+
+            paths = [message[0] for message in fake.received]
+            self.assertIn("/workbench/m-test-arc/ring/all", paths)
+            self.assertNotIn("/workbench/m-test-arc/grid/led/all", paths)
+        finally:
+            fake.close()
+
+    def test_ambiguous_device_capability_fails_closed(self) -> None:
+        fake = FakeDevice(size=[0, 0])
+        try:
+            with tempfile.TemporaryDirectory() as temporary_directory:
+                session = osc.InteractiveSession(
+                    [osc.Device("m-test-unknown", "monome unknown", fake.port)],
+                    Path(temporary_directory) / "events.jsonl",
+                )
+                with self.assertRaisesRegex(
+                    RuntimeError, "unsupported or ambiguous capability"
+                ):
+                    session.configure()
+                session.close()
+
+            paths = [message[0] for message in fake.received]
+            self.assertEqual(paths, ["/sys/info"])
         finally:
             fake.close()
 

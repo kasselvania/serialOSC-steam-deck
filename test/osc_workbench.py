@@ -22,6 +22,8 @@ from typing import Any, Iterable
 
 SUPERVISOR_HOST = "127.0.0.1"
 SUPERVISOR_PORT = 12002
+CAPABILITY_GRID = "grid"
+CAPABILITY_ARC = "arc"
 
 
 def _padded_string(value: str) -> bytes:
@@ -236,6 +238,27 @@ class SessionDevice:
     device: Device
     original: dict[str, Any]
     prefix: str
+    capability: str
+
+
+def classify_capability(device: Device, info: dict[str, Any]) -> str:
+    """Identify the one output protocol this session may send to a device."""
+    name = device.name.casefold()
+    if re.search(r"\barc\b", name):
+        return CAPABILITY_ARC
+
+    size = info.get("size")
+    if (
+        isinstance(size, list)
+        and len(size) == 2
+        and all(isinstance(value, int) and value > 0 for value in size)
+    ):
+        return CAPABILITY_GRID
+
+    raise RuntimeError(
+        f"{device.serial} has unsupported or ambiguous capability: "
+        f"name={device.name!r} size={size!r}"
+    )
 
 
 class InteractiveSession:
@@ -272,10 +295,12 @@ class InteractiveSession:
                     f"{device.serial} did not provide complete /sys/info: {', '.join(missing)}"
                 )
             prefix = self._safe_prefix(device.serial)
-            session_device = SessionDevice(device, original, prefix)
+            capability = classify_capability(device, original)
+            session_device = SessionDevice(device, original, prefix, capability)
             self.session_devices.append(session_device)
             self.log.write(
-                "device-original", device=asdict(device), original=original, prefix=prefix
+                "device-original", device=asdict(device), original=original,
+                prefix=prefix, capability=capability,
             )
             self._send(device, "/sys/host", "s", (SUPERVISOR_HOST,))
             self._send(device, "/sys/port", "i", (self.callback_port,))
@@ -293,6 +318,10 @@ class InteractiveSession:
 
     def grid(self, selector: str, state: str) -> None:
         item = self.resolve(selector)
+        if item.capability != CAPABILITY_GRID:
+            raise ValueError(
+                f"{item.device.serial} is {item.capability}, not a grid; command refused"
+            )
         value = {"on": 1, "off": 0}.get(state)
         if value is None:
             raise ValueError("grid state must be on or off")
@@ -300,6 +329,10 @@ class InteractiveSession:
 
     def ring(self, selector: str, ring: str, state: str) -> None:
         item = self.resolve(selector)
+        if item.capability != CAPABILITY_ARC:
+            raise ValueError(
+                f"{item.device.serial} is {item.capability}, not an arc; command refused"
+            )
         value = {"on": 15, "off": 0}.get(state)
         if value is None:
             raise ValueError("ring state must be on or off")
@@ -310,10 +343,16 @@ class InteractiveSession:
 
     def all_off(self) -> None:
         for item in self.session_devices:
-            self._send(item.device, f"{item.prefix}/grid/led/all", "i", (0,))
-            for ring_number in range(4):
-                self._send(
-                    item.device, f"{item.prefix}/ring/all", "ii", (ring_number, 0)
+            if item.capability == CAPABILITY_GRID:
+                self._send(item.device, f"{item.prefix}/grid/led/all", "i", (0,))
+            elif item.capability == CAPABILITY_ARC:
+                for ring_number in range(4):
+                    self._send(
+                        item.device, f"{item.prefix}/ring/all", "ii", (ring_number, 0)
+                    )
+            else:
+                raise RuntimeError(
+                    f"unsupported session capability: {item.capability!r}"
                 )
 
     def restore(self) -> bool:
@@ -367,7 +406,7 @@ class InteractiveSession:
             print(
                 f"DEVICE {index}: serial={item.device.serial} name={item.device.name!r} "
                 f"server_port={item.device.port} size={size[0]}x{size[1]} "
-                f"test_prefix={item.prefix}",
+                f"capability={item.capability} test_prefix={item.prefix}",
                 flush=True,
             )
 

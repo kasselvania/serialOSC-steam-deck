@@ -87,6 +87,10 @@ That packaged-byte test confirmed:
 - the all-LEDs-off command was sent after the test;
 - SteamOS read-only mode remained enabled.
 
+On 2026-08-24, the same installed binary hashes were exercised after a SteamOS update with a legacy FTDI 128 and a Pico-based Zero connected simultaneously through the dock. The Zero's boot gesture changed its USB identity from the iii composite personality (`cafe:1101`, `iii_grid`, serial plus MIDI/audio interfaces) to its SerialOSC compatibility personality (`cafe:1110`, `grid`, serial `m2321590`). SerialOSC then reported it as `monome zero`, size 16 by 16, on its own saved device port.
+
+The two-grid test exposed and corrected a workbench-only protocol error: cleanup had sent both grid and arc output commands to every device. The modern Zero tolerated the irrelevant ring messages, while the legacy grid continued to send keys but stopped accepting LED output under the test prefix. Direct LED output worked again under the restored `/monome` prefix. That observation is consistent with the cross-capability bytes disrupting the legacy device's command parser, but the firmware internals were not instrumented; the authoritative defect is that the harness sent an output family the target did not support. The workbench now classifies grid versus arc capability before changing settings, sends only the matching output family, refuses cross-capability commands, and fails closed for ambiguous devices. A repeated physical test independently lit each grid, rejected a ring command addressed to the legacy grid, restored both devices' original OSC settings, released the temporary callback port, and left both surfaces dark.
+
 The installed binaries were byte-compared with the staged distributable before this test. Their validated SHA-256 receipts are:
 
 ```text
