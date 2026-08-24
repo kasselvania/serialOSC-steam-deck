@@ -5,6 +5,7 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR
 readonly PACKAGE_NAME="serialosc-steamos-v1.4.7-x86_64"
 readonly INSTALL_DIR="$HOME/.local/libexec/serialosc"
+readonly TEST_INSTALL_DIR="$HOME/.local/libexec/serialosc-tests"
 readonly USER_BIN_DIR="$HOME/.local/bin"
 readonly SERVICE_DIR="$HOME/.config/systemd/user"
 readonly SERVICE_TARGET="$SERVICE_DIR/serialoscd.service"
@@ -71,8 +72,10 @@ verify_binary "$payload_dir/serialosc-detector"
 verify_binary "$payload_dir/serialosc-device"
 [[ "$("$payload_dir/serialoscd" -v)" == 'serialoscd 1.4.7 (94d457f)' ]] \
     || fail "payload version does not match SerialOSC 1.4.7 commit 94d457f"
+[[ -r "$ROOT_DIR/test/osc_workbench.py" ]] || fail "missing OSC workbench helper"
+[[ -r "$ROOT_DIR/hardware-test.sh" ]] || fail "missing host hardware-test command"
 
-mkdir -p "$INSTALL_DIR" "$USER_BIN_DIR" "$SERVICE_DIR" "$STATE_DIR"
+mkdir -p "$INSTALL_DIR" "$TEST_INSTALL_DIR" "$USER_BIN_DIR" "$SERVICE_DIR" "$STATE_DIR"
 systemctl --user stop serialoscd.service 2>/dev/null || true
 
 if [[ -e "$SERVICE_TARGET" ]] && ! cmp -s "$ROOT_DIR/systemd/serialoscd.service" "$SERVICE_TARGET"; then
@@ -87,6 +90,8 @@ install -m 0755 "$payload_dir/serialosc-device" "$INSTALL_DIR/serialosc-device"
 install -m 0644 "$ROOT_DIR/systemd/serialoscd.service" "$SERVICE_TARGET"
 install -m 0755 "$ROOT_DIR/doctor.sh" "$USER_BIN_DIR/serialosc-doctor"
 install -m 0755 "$ROOT_DIR/uninstall.sh" "$USER_BIN_DIR/serialosc-uninstall"
+install -m 0755 "$ROOT_DIR/hardware-test.sh" "$USER_BIN_DIR/serialosc-hardware-test"
+install -m 0755 "$ROOT_DIR/test/osc_workbench.py" "$TEST_INSTALL_DIR/osc_workbench.py"
 
 systemctl --user daemon-reload
 systemctl --user enable --now serialoscd.service
@@ -98,3 +103,5 @@ systemctl --user is-active --quiet serialoscd.service \
 printf '\nInstalled %s\n' "$("$INSTALL_DIR/serialoscd" -v)"
 printf 'SteamOS system files were not modified.\n'
 printf 'Run %s for a full status report.\n' "$USER_BIN_DIR/serialosc-doctor"
+printf 'Run %s begin with all devices unplugged to start a physical test.\n' \
+    "$USER_BIN_DIR/serialosc-hardware-test"

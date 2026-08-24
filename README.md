@@ -30,7 +30,9 @@ cd serialOSC-steam-deck
 ~/.local/libexec/serialosc/serialosc-device
 ~/.config/systemd/user/serialoscd.service
 ~/.local/bin/serialosc-doctor
+~/.local/bin/serialosc-hardware-test
 ~/.local/bin/serialosc-uninstall
+~/.local/libexec/serialosc-tests/osc_workbench.py
 ```
 
 The first build downloads a Debian container and build dependencies. OS packages remain inside `serialosc-build`; CMake tooling and build output remain under the repository's ignored `build/` directory. SteamOS itself stays read-only.
@@ -46,6 +48,18 @@ With a Monome connected, the report should show its `/dev/serial/by-id/...` path
 SerialOSC listens for discovery on UDP port 12002. Each connected device receives its own UDP port and is advertised as `_monome-osc._udp` through Zeroconf.
 
 Hardware validation covers a legacy Monome 128 connected both directly and through a USB dock. The dock changes the physical USB route, but SerialOSC follows the device's stable serial identity rather than a hardcoded port. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the exact validation boundary.
+
+## Physical hardware workbench
+
+The repository includes a host-side, dependency-free OSC workbench for repeatable hotplug, multi-device, input/output, UDP release/conflict, dock, suspend, reboot, and post-update tests. It records machine evidence while keeping physical observations explicit.
+
+With every Monome unplugged, start a session on the SteamOS host:
+
+```bash
+serialosc-hardware-test begin post-update-matrix
+```
+
+The command refuses to begin unless SteamOS is read-only, the exact validated binaries and user service are healthy, legacy services are not active, and no device is already under test. See [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) for the device matrix and controlled procedures.
 
 ## Remove
 
@@ -79,7 +93,7 @@ That command does not delete the old unit files. `serialosc-doctor` continues to
 ./build.sh
 ```
 
-The archive and checksum are written under `dist/`. The archive includes the pinned source (including submodules), build receipt, licenses, binaries, service, installer, uninstaller, and diagnostics.
+The archive and checksum are written under `dist/`. The archive includes the pinned source (including submodules), build receipt, licenses, binaries, service, installer, uninstaller, diagnostics, and hardware workbench.
 
 Verify the outer archive checksum from the repository root with:
 

@@ -140,7 +140,13 @@ build_inside_container() {
 
     [[ "$STAGE_DIR" == "$WORK_DIR"/serialosc-steamos-* ]] || fail "unsafe staging path"
     rm -rf -- "$STAGE_DIR"
-    mkdir -p "$STAGE_DIR/bin" "$STAGE_DIR/docs" "$STAGE_DIR/licenses" "$STAGE_DIR/source" "$STAGE_DIR/systemd"
+    mkdir -p \
+        "$STAGE_DIR/bin" \
+        "$STAGE_DIR/docs" \
+        "$STAGE_DIR/licenses" \
+        "$STAGE_DIR/source" \
+        "$STAGE_DIR/systemd" \
+        "$STAGE_DIR/test"
 
     install -m 0755 "$COMPILE_DIR/bin/serialoscd" "$STAGE_DIR/bin/serialoscd"
     install -m 0755 "$COMPILE_DIR/bin/serialosc-detector" "$STAGE_DIR/bin/serialosc-detector"
@@ -151,10 +157,14 @@ build_inside_container() {
     install -m 0755 "$ROOT_DIR/uninstall.sh" "$STAGE_DIR/uninstall.sh"
     install -m 0755 "$ROOT_DIR/doctor.sh" "$STAGE_DIR/doctor.sh"
     install -m 0755 "$ROOT_DIR/migrate-legacy-user-service.sh" "$STAGE_DIR/migrate-legacy-user-service.sh"
+    install -m 0755 "$ROOT_DIR/hardware-test.sh" "$STAGE_DIR/hardware-test.sh"
     install -m 0755 "$ROOT_DIR/build.sh" "$STAGE_DIR/build.sh"
     install -m 0644 "$ROOT_DIR/README.md" "$STAGE_DIR/README.md"
     install -m 0644 "$ROOT_DIR/docs/ARCHITECTURE.md" "$STAGE_DIR/docs/ARCHITECTURE.md"
+    install -m 0644 "$ROOT_DIR/docs/HARDWARE_TESTS.md" "$STAGE_DIR/docs/HARDWARE_TESTS.md"
     install -m 0644 "$ROOT_DIR/systemd/serialoscd.service" "$STAGE_DIR/systemd/serialoscd.service"
+    install -m 0755 "$ROOT_DIR/test/osc_workbench.py" "$STAGE_DIR/test/osc_workbench.py"
+    install -m 0644 "$ROOT_DIR/test/test_osc_workbench.py" "$STAGE_DIR/test/test_osc_workbench.py"
 
     install -m 0644 "$SOURCE_DIR/COPYRIGHT" "$STAGE_DIR/licenses/serialosc-COPYRIGHT"
     install -m 0644 "$SOURCE_DIR/third-party/liblo/COPYING" "$STAGE_DIR/licenses/liblo-COPYING"
@@ -183,12 +193,20 @@ zeroconf=ON
 maximum_required_glibc=2.34
 direct_runtime_libraries=libc.so.6,libm.so.6,libudev.so.1
 dynamically_loaded_runtime_library=libdns_sd.so.1
+hardware_workbench=host-side,evidence-preserving,no-system-writes
 EOF
 
     (
         cd "$STAGE_DIR"
-        sha256sum bin/serialoscd bin/serialosc-detector bin/serialosc-device \
-            source/serialosc-v1.4.7-with-submodules.tar.gz > SHA256SUMS
+        sha256sum \
+            bin/serialoscd \
+            bin/serialosc-detector \
+            bin/serialosc-device \
+            hardware-test.sh \
+            systemd/serialoscd.service \
+            test/osc_workbench.py \
+            source/serialosc-v1.4.7-with-submodules.tar.gz \
+            > SHA256SUMS
     )
 
     mkdir -p "$DIST_DIR"
