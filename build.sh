@@ -178,8 +178,14 @@ build_inside_container() {
     install -m 0755 "$ROOT_DIR/hardware-test.sh" "$STAGE_DIR/hardware-test.sh"
     install -m 0755 "$ROOT_DIR/build.sh" "$STAGE_DIR/build.sh"
     install -m 0644 "$ROOT_DIR/README.md" "$STAGE_DIR/README.md"
-    install -m 0644 "$ROOT_DIR/docs/ARCHITECTURE.md" "$STAGE_DIR/docs/ARCHITECTURE.md"
-    install -m 0644 "$ROOT_DIR/docs/HARDWARE_TESTS.md" "$STAGE_DIR/docs/HARDWARE_TESTS.md"
+    for documentation in \
+        ARCHITECTURE.md \
+        HARDWARE_TESTS.md \
+        INSTALLATION.md \
+        THIRD_PARTY_LICENSES.md \
+        TROUBLESHOOTING.md; do
+        install -m 0644 "$ROOT_DIR/docs/$documentation" "$STAGE_DIR/docs/$documentation"
+    done
     install -m 0644 "$ROOT_DIR/systemd/serialoscd.service" "$STAGE_DIR/systemd/serialoscd.service"
     install -m 0755 "$ROOT_DIR/test/osc_workbench.py" "$STAGE_DIR/test/osc_workbench.py"
     install -m 0644 "$ROOT_DIR/test/test_osc_workbench.py" "$STAGE_DIR/test/test_osc_workbench.py"

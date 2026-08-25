@@ -1,35 +1,78 @@
 # SerialOSC for Steam Deck
 
-This repository provides a rootless SerialOSC build and user-service workflow for x86-64 Steam Decks.
+Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) packaging for x86-64 Steam Decks.
 
-It does **not** disable SteamOS read-only mode, use `pacman`, write to `/usr` or `/etc`, install a per-device system service, or force kernel modules. SerialOSC runs as one user-level supervisor and launches its detector and device workers itself.
+[Download the latest release](https://github.com/kasselvania/serialOSC-steam-deck/releases/latest) · [Installation guide](docs/INSTALLATION.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Hardware evidence](docs/ARCHITECTURE.md#observed-hardware-proof)
 
-The pinned upstream source is SerialOSC 1.4.7 at commit `94d457f80fe3721d21df5190c99bd522c711185a`.
+This project packages unmodified SerialOSC 1.4.7 from upstream commit `94d457f80fe3721d21df5190c99bd522c711185a` with a SteamOS-safe installer, user-level service, diagnostics, and physical test tooling. It does not replace SteamOS packages or install a system daemon.
 
-## Where commands run
+## Quick install
 
-Run every command in this README on the **SteamOS host** from Konsole in Desktop Mode (normally a `deck@steamdeck` prompt). Do not enter `chatgpt-debian` or another application container first. If the prompt shows a container name, run `exit` until it returns to the SteamOS host.
+1. Download both release assets:
+   - [`serialosc-steamos-v1.4.7-x86_64.tar.gz`](https://github.com/kasselvania/serialOSC-steam-deck/releases/latest/download/serialosc-steamos-v1.4.7-x86_64.tar.gz)
+   - [`serialosc-steamos-v1.4.7-x86_64.tar.gz.sha256`](https://github.com/kasselvania/serialOSC-steam-deck/releases/latest/download/serialosc-steamos-v1.4.7-x86_64.tar.gz.sha256)
+2. In Desktop Mode, open the archive in Dolphin and extract its folder.
+3. Open the extracted folder and double-click **Install SerialOSC.sh**.
+4. When Dolphin offers **Launch** or **Open with Kate**, choose **Launch**.
+5. Press Enter in Konsole and wait for `INSTALLATION PASSED`.
 
-The build script creates and enters its own `serialosc-build` container automatically. Git, Distrobox, and an internet connection are required for the first build.
+The release contains prebuilt, hardware-validated binaries. A normal install does not need Git, Distrobox, a compiler, CMake, `sudo`, `pacman`, AUR tooling, or disabled SteamOS read-only mode.
 
-## Install a downloaded release
+For checksum verification, legacy-install migration, command-line installation, and removal, use the [complete installation guide](docs/INSTALLATION.md).
 
-Once the release archive is published, this is the recommended path for a normal Steam Deck user. It uses the packaged, hardware-validated binaries and does not need Git, Distrobox, a compiler, CMake, or `sudo`.
+## What it installs
 
-1. Download `serialosc-steamos-v1.4.7-x86_64.tar.gz` and its `.sha256` file from the release.
-2. Open the archive in Dolphin and extract the `serialosc-steamos-v1.4.7-x86_64` folder.
-3. Open that folder and double-click **Install SerialOSC.sh**. When Dolphin offers **Launch** or **Open with Kate**, choose **Launch**.
-4. Konsole shows exactly what will change. Press Enter to install, then leave the window open for the automatic doctor report.
+Everything installed by the normal path is owned by the current user:
 
-The click installer opens its own interactive Konsole, verifies the archive's internal `SHA256SUMS` before changing anything, writes a complete log under `~/.local/state/serialosc-steamos`, and reports either `INSTALLATION PASSED` or `INSTALLATION FAILED`. `install.sh` remains the command-line authority underneath the launcher.
+| Purpose | Location |
+|---|---|
+| Supervisor and device processes | `~/.local/libexec/serialosc/` |
+| User service | `~/.config/systemd/user/serialoscd.service` |
+| Diagnostics | `~/.local/bin/serialosc-doctor` |
+| Physical test workbench | `~/.local/bin/serialosc-hardware-test` |
+| Uninstaller | `~/.local/bin/serialosc-uninstall` |
+| Installer logs | `~/.local/state/serialosc-steamos/` |
 
-The launcher is specifically for SteamOS Desktop Mode under KDE Plasma with Konsole. It resolves its own directory, so spaces in the extraction path are supported. An accidental graphical launch of the lower-level `install.sh` is redirected to the same interactive installer instead of running silently. Deliberate headless automation must opt in with `./install.sh --noninteractive`.
+The installer verifies every packaged file before changing user state. A graphical launch always opens an interactive Konsole; deliberate headless automation must opt in with `./install.sh --noninteractive`.
 
-Archive extraction should preserve the launcher's executable bit. If a nonstandard extractor removes it, re-extract with Ark rather than bypassing the warning.
+## Tested hardware
 
-## Install from a source checkout
+The exact release binaries were physically exercised through a USB dock with:
 
-Run:
+- a legacy FTDI Monome 128;
+- a Pico-based 16×16 Zero/256 in SerialOSC compatibility mode;
+- a classic four-encoder Arc;
+- legacy+Zero and legacy+Arc pairs;
+- Zero+Arc as the surviving pair after legacy-grid removal;
+- all three devices concurrently.
+
+Testing covered discovery, independent LED/ring output, key/encoder input, saved-port reuse, port conflict and release, removal order, reconnect, dock resets, and survivor-device continuity. The supervisor remained active with zero restarts. See the [architecture and validation boundary](docs/ARCHITECTURE.md) for the exact matrix, evidence, and untested cases.
+
+## SteamOS safety boundary
+
+This project deliberately does not:
+
+- run `steamos-readonly disable`;
+- install or upgrade host packages;
+- write application files into `/usr`, `/usr/local`, or `/etc`;
+- install udev rules or persistent kernel-module configuration;
+- create one system service per serial port;
+- silently replace an older SerialOSC installation.
+
+Known legacy services must be inactive and disabled before installation. Their unit files may remain preserved for audit or rollback. SteamOS host policy can also prevent Zeroconf service publication; the project reports that boundary and does not rewrite `/etc` to bypass it.
+
+## Documentation
+
+- [Installation and migration](docs/INSTALLATION.md)
+- [Troubleshooting and support evidence](docs/TROUBLESHOOTING.md)
+- [Architecture, exact hardware proof, and known boundaries](docs/ARCHITECTURE.md)
+- [Physical hardware test workbench](docs/HARDWARE_TESTS.md)
+- [Third-party source and license notice](docs/THIRD_PARTY_LICENSES.md)
+- [Current release notes](https://github.com/kasselvania/serialOSC-steam-deck/releases/latest)
+
+## Build from source
+
+Development builds run inside a dedicated rootless Debian 12 Distrobox so build dependencies never become SteamOS host packages:
 
 ```bash
 git clone https://github.com/kasselvania/serialOSC-steam-deck.git
@@ -37,85 +80,8 @@ cd serialOSC-steam-deck
 ./install.sh
 ```
 
-In a source checkout, `install.sh` builds SerialOSC in a dedicated Debian 12 Distrobox. In a downloaded release, it verifies and uses the included binaries instead. Both paths install only these user-owned files:
+The build pins upstream SerialOSC and every private dependency. A release build also refuses to package binaries whose hashes differ from the physically validated set. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full build boundary.
 
-```text
-~/.local/libexec/serialosc/serialoscd
-~/.local/libexec/serialosc/serialosc-detector
-~/.local/libexec/serialosc/serialosc-device
-~/.config/systemd/user/serialoscd.service
-~/.local/bin/serialosc-doctor
-~/.local/bin/serialosc-hardware-test
-~/.local/bin/serialosc-uninstall
-~/.local/libexec/serialosc-tests/osc_workbench.py
-```
+## Optional PlugData object
 
-The first source build downloads a Debian container and build dependencies. OS packages remain inside `serialosc-build`; CMake tooling and build output remain under the repository's ignored `build/` directory. SteamOS itself stays read-only.
-
-## Verify
-
-```bash
-serialosc-doctor
-```
-
-With a Monome connected, the report should show its `/dev/serial/by-id/...` path, read/write access, one `serialoscd` supervisor, one detector, and one device worker.
-
-SerialOSC listens for discovery on UDP port 12002. Each connected device receives its own UDP port and, when the host permits DNS-SD publishing, is advertised as `_monome-osc._udp` through Zeroconf.
-
-Hardware validation covers a legacy Monome 128, a Pico-based Zero/256 in OSC mode, and a classic four-encoder Arc, both individually and in multi-device combinations through a USB dock. The dock can change or briefly reset a physical USB route, but SerialOSC follows stable serial identities rather than hardcoded tty numbers. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the exact tested matrix, dock caveats, and untested boundaries.
-
-## Physical hardware workbench
-
-The repository includes a host-side, dependency-free OSC workbench for repeatable hotplug, multi-device, input/output, UDP release/conflict, dock, suspend, reboot, and post-update tests. It records machine evidence while keeping physical observations explicit.
-
-With every Monome unplugged, start a session on the SteamOS host:
-
-```bash
-serialosc-hardware-test begin post-update-matrix
-```
-
-The command refuses to begin unless SteamOS is read-only, the exact validated binaries and user service are healthy, legacy services are inactive and disabled, and no device is already under test. See [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) for the device matrix and controlled procedures.
-
-## Remove
-
-```bash
-serialosc-uninstall
-```
-
-The uninstaller preserves device preferences under `~/.config/serialosc`. Use `serialosc-uninstall --purge-config` only when those preferences should also be removed.
-
-## Existing legacy installation
-
-If `install.sh` detects the former `~/.config/systemd/user/serialosc.service`, it stops without overwriting it. Preserve and disable that file first:
-
-```bash
-./migrate-legacy-user-service.sh
-```
-
-Old system-level units under `/etc/systemd/system` are reported but never changed by the rootless installer. The installer refuses to proceed while either known legacy service is active **or enabled**; a failed process with an enabled boot entry is still a conflict. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the exact legacy findings and cleanup boundary.
-
-If the former installer enabled its two known system services, preserve any customized unit files and disable the obsolete boot entries before installing:
-
-```bash
-sudo systemctl disable --now serialosc.service serialoscd@ttyUSB0.service
-```
-
-That command does not delete the old unit files. `serialosc-doctor` continues to report them so they cannot be mistaken for part of the rootless installation.
-
-## Build a distributable archive
-
-```bash
-./build.sh
-```
-
-The archive and checksum are written under `dist/`. The archive includes the pinned source (including submodules), build receipt, licenses, binaries, service, click launcher, command-line installer, uninstaller, diagnostics, and hardware workbench. Its internal manifest covers every packaged file and is enforced by the installer.
-
-Verify the outer archive checksum from the repository root with:
-
-```bash
-(cd dist && sha256sum -c serialosc-steamos-v1.4.7-x86_64.tar.gz.sha256)
-```
-
-## PlugData object
-
-[`monome-object.pd`](monome-object.pd) remains available as an optional PlugData integration. It is not part of the SerialOSC daemon lifecycle and is not installed automatically.
+[`monome-object.pd`](monome-object.pd) is retained as an optional PlugData integration. It is not part of the SerialOSC service lifecycle and is not installed automatically.
