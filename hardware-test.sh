@@ -373,8 +373,10 @@ EOF
     for name in serialosc.service 'serialoscd@ttyUSB0.service'; do
         if systemctl is-active --quiet "$name" 2>/dev/null; then
             preflight_fail "legacy system service $name is active"
+        elif systemctl is-enabled --quiet "$name" 2>/dev/null; then
+            preflight_fail "legacy system service $name is enabled"
         else
-            preflight_pass "legacy system service $name is not active"
+            preflight_pass "legacy system service $name is inactive and disabled"
         fi
     done
 

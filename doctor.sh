@@ -118,11 +118,27 @@ else
 fi
 
 if [[ -e "$HOME/.config/systemd/user/serialosc.service" ]]; then
-    warn 'legacy user service still exists at ~/.config/systemd/user/serialosc.service'
+    fail 'legacy user service still exists at ~/.config/systemd/user/serialosc.service'
 fi
-for system_unit in /etc/systemd/system/serialosc.service /etc/systemd/system/serialoscd@.service; do
-    if [[ -e "$system_unit" ]]; then
-        warn "legacy system unit still exists: $system_unit"
+
+for system_service in serialosc.service serialoscd@ttyUSB0.service; do
+    case "$system_service" in
+        serialosc.service)
+            system_unit=/etc/systemd/system/serialosc.service
+            ;;
+        serialoscd@ttyUSB0.service)
+            system_unit=/etc/systemd/system/serialoscd@.service
+            ;;
+    esac
+
+    if systemctl is-active --quiet "$system_service" 2>/dev/null; then
+        fail "legacy system service is active: $system_service"
+    elif systemctl is-enabled --quiet "$system_service" 2>/dev/null; then
+        fail "legacy system service is enabled: $system_service"
+    elif [[ -e "$system_unit" ]]; then
+        warn "disabled legacy system unit is preserved: $system_unit"
+    else
+        pass "legacy system service is absent: $system_service"
     fi
 done
 

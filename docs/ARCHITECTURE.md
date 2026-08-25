@@ -48,6 +48,8 @@ Its principal defects were:
 - it hardcoded the `deck` user and `/usr/local` paths;
 - it had no rollback, uninstall, artifact receipt, or failure-safe read-only restoration.
 
+The rootless installer never edits these legacy files. It permits preserved unit files only when their boot entries are disabled and their services are inactive. An active, failed-but-enabled, or inactive-but-enabled legacy service is a hard preflight failure because it can retry or contend with the user service after boot.
+
 ## Observed hardware proof
 
 On 2026-08-21, a legacy Monome 128 was tested on SteamOS 3.7.20:

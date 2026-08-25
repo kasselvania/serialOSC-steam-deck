@@ -17,6 +17,24 @@ fail() {
     exit 1
 }
 
+verify_packaged_bundle() {
+    local manifest="$ROOT_DIR/SHA256SUMS"
+
+    [[ -d "$ROOT_DIR/bin" ]] \
+        || fail "this is a source checkout, not a packaged release bundle"
+    [[ -r "$manifest" ]] \
+        || fail "packaged release is missing SHA256SUMS"
+    command -v sha256sum >/dev/null 2>&1 \
+        || fail "sha256sum is required to verify the packaged release"
+
+    (
+        cd "$ROOT_DIR"
+        sha256sum --check --strict --quiet SHA256SUMS
+    ) || fail "packaged release checksum verification failed; do not install this copy"
+
+    printf 'Verified packaged release checksums.\n'
+}
+
 find_payload() {
     if [[ -x "$ROOT_DIR/bin/serialoscd" ]]; then
         printf '%s\n' "$ROOT_DIR/bin"
@@ -46,11 +64,48 @@ verify_binary() {
     fi
 }
 
+if [[ $# -gt 1 ]]; then
+    printf 'Usage: %s [--verify-bundle|--noninteractive]\n' "$0" >&2
+    exit 2
+fi
+
+case "${1:-}" in
+    "")
+        interactive_install=true
+        ;;
+    --noninteractive)
+        [[ $# -eq 1 ]] || { printf 'Usage: %s [--verify-bundle|--noninteractive]\n' "$0" >&2; exit 2; }
+        interactive_install=false
+        ;;
+    --verify-bundle)
+        [[ $# -eq 1 ]] || { printf 'Usage: %s [--verify-bundle|--noninteractive]\n' "$0" >&2; exit 2; }
+        verify_packaged_bundle
+        exit 0
+        ;;
+    *)
+        printf 'Usage: %s [--verify-bundle|--noninteractive]\n' "$0" >&2
+        exit 2
+        ;;
+esac
+
+if [[ "$interactive_install" == true && ! -t 0 ]]; then
+    [[ -x "$ROOT_DIR/install-click.sh" ]] \
+        || fail "install-click.sh is required for a no-terminal launch"
+    if [[ -d "$ROOT_DIR/bin" ]]; then
+        verify_packaged_bundle
+    fi
+    exec "$ROOT_DIR/install-click.sh"
+fi
+
 [[ "$(uname -s)" == "Linux" ]] || fail "this installer requires Linux"
 [[ "$(uname -m)" == "x86_64" ]] || fail "this package currently supports x86_64 only"
 command -v systemctl >/dev/null 2>&1 || fail "systemctl is required"
 command -v ldd >/dev/null 2>&1 || fail "ldd is required"
 command -v ldconfig >/dev/null 2>&1 || fail "ldconfig is required"
+
+if [[ -d "$ROOT_DIR/bin" ]]; then
+    verify_packaged_bundle
+fi
 
 if ! ldconfig -p 2>/dev/null | grep -F 'libdns_sd.so.1 ' >/dev/null; then
     fail "host runtime library libdns_sd.so.1 is required for Zeroconf"
@@ -63,6 +118,9 @@ fi
 for legacy_system_service in serialosc.service serialoscd@ttyUSB0.service; do
     if systemctl is-active --quiet "$legacy_system_service" 2>/dev/null; then
         fail "system-level $legacy_system_service is active; stop and preserve it before installing the user service"
+    fi
+    if systemctl is-enabled --quiet "$legacy_system_service" 2>/dev/null; then
+        fail "system-level $legacy_system_service is enabled; preserve its unit file and disable the obsolete boot entry before installing"
     fi
 done
 

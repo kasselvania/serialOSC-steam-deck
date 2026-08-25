@@ -31,7 +31,7 @@ serialosc-hardware-test begin post-update-matrix
 - the user service is active and enabled;
 - the installed binaries match the hardware-validated package hashes;
 - UDP/12002 is listening;
-- known legacy services are not active;
+- known legacy services are inactive and disabled;
 - no device worker or OSC-managed device is already present.
 
 Evidence is stored under:

@@ -13,6 +13,9 @@ readonly LIBMONOME_COMMIT="dfff2bec1ce7655a21a5f3fdae1b14c5cd786f17"
 readonly LIBUV_COMMIT="b00c5d1a09c094020044e79e19f478a25b8e1431"
 readonly OPTPARSE_COMMIT="a86877ed301d89a4eb64feb08f23af395aede2ed"
 readonly CMAKE_VERSION="3.31.6"
+readonly VALIDATED_SERIALOSCD_SHA256="a97adf0fc430ddbd98bae7f1562408e5b5c048cd1b7a3a5efa07677d7c2dadea"
+readonly VALIDATED_DETECTOR_SHA256="5d7e47954bc1a40c06350f14c07b9d96a9b7b96357e24b9e15ba4c48c6541db3"
+readonly VALIDATED_DEVICE_SHA256="5d2f0373541d3a182ef9c77484d6cd823047d0f9056f4d5209ce5f8b09dd5af4"
 readonly PACKAGE_NAME="serialosc-steamos-v1.4.7-x86_64"
 readonly WORK_DIR="$ROOT_DIR/build"
 readonly SOURCE_DIR="$WORK_DIR/upstream"
@@ -72,6 +75,16 @@ check_binary() {
     if dpkg --compare-versions "$max_glibc" gt 2.34; then
         fail "$binary requires glibc $max_glibc; the package ceiling is 2.34"
     fi
+}
+
+require_validated_sha256() {
+    local path="$1"
+    local expected="$2"
+    local actual
+
+    actual="$(sha256sum "$path" | awk '{print $1}')"
+    [[ "$actual" == "$expected" ]] \
+        || fail "$path has SHA-256 $actual, not physically validated $expected"
 }
 
 build_inside_container() {
@@ -152,8 +165,13 @@ build_inside_container() {
     install -m 0755 "$COMPILE_DIR/bin/serialosc-detector" "$STAGE_DIR/bin/serialosc-detector"
     install -m 0755 "$COMPILE_DIR/bin/serialosc-device" "$STAGE_DIR/bin/serialosc-device"
     strip --strip-unneeded "$STAGE_DIR/bin/serialoscd" "$STAGE_DIR/bin/serialosc-detector" "$STAGE_DIR/bin/serialosc-device"
+    require_validated_sha256 "$STAGE_DIR/bin/serialoscd" "$VALIDATED_SERIALOSCD_SHA256"
+    require_validated_sha256 "$STAGE_DIR/bin/serialosc-detector" "$VALIDATED_DETECTOR_SHA256"
+    require_validated_sha256 "$STAGE_DIR/bin/serialosc-device" "$VALIDATED_DEVICE_SHA256"
 
+    install -m 0755 "$ROOT_DIR/Install SerialOSC.sh" "$STAGE_DIR/Install SerialOSC.sh"
     install -m 0755 "$ROOT_DIR/install.sh" "$STAGE_DIR/install.sh"
+    install -m 0755 "$ROOT_DIR/install-click.sh" "$STAGE_DIR/install-click.sh"
     install -m 0755 "$ROOT_DIR/uninstall.sh" "$STAGE_DIR/uninstall.sh"
     install -m 0755 "$ROOT_DIR/doctor.sh" "$STAGE_DIR/doctor.sh"
     install -m 0755 "$ROOT_DIR/migrate-legacy-user-service.sh" "$STAGE_DIR/migrate-legacy-user-service.sh"
@@ -165,6 +183,7 @@ build_inside_container() {
     install -m 0644 "$ROOT_DIR/systemd/serialoscd.service" "$STAGE_DIR/systemd/serialoscd.service"
     install -m 0755 "$ROOT_DIR/test/osc_workbench.py" "$STAGE_DIR/test/osc_workbench.py"
     install -m 0644 "$ROOT_DIR/test/test_osc_workbench.py" "$STAGE_DIR/test/test_osc_workbench.py"
+    install -m 0755 "$ROOT_DIR/test/test_install_bundle.sh" "$STAGE_DIR/test/test_install_bundle.sh"
 
     install -m 0644 "$SOURCE_DIR/COPYRIGHT" "$STAGE_DIR/licenses/serialosc-COPYRIGHT"
     install -m 0644 "$SOURCE_DIR/third-party/liblo/COPYING" "$STAGE_DIR/licenses/liblo-COPYING"
@@ -194,20 +213,17 @@ maximum_required_glibc=2.34
 direct_runtime_libraries=libc.so.6,libm.so.6,libudev.so.1
 dynamically_loaded_runtime_library=libdns_sd.so.1
 hardware_workbench=host-side,evidence-preserving,no-system-writes
+click_installer=executable-shell-entry,kde-konsole,manifest-verified
 EOF
 
     (
         cd "$STAGE_DIR"
-        sha256sum \
-            bin/serialoscd \
-            bin/serialosc-detector \
-            bin/serialosc-device \
-            hardware-test.sh \
-            systemd/serialoscd.service \
-            test/osc_workbench.py \
-            source/serialosc-v1.4.7-with-submodules.tar.gz \
+        find . -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
             > SHA256SUMS
     )
+    "$STAGE_DIR/install.sh" --verify-bundle
 
     mkdir -p "$DIST_DIR"
     tar --sort=name --mtime="@$source_date_epoch" --owner=0 --group=0 --numeric-owner \

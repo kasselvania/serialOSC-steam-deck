@@ -12,7 +12,22 @@ Run every command in this README on the **SteamOS host** from Konsole in Desktop
 
 The build script creates and enters its own `serialosc-build` container automatically. Git, Distrobox, and an internet connection are required for the first build.
 
-## Install from this repository
+## Install a downloaded release
+
+Once the release archive is published, this is the recommended path for a normal Steam Deck user. It uses the packaged, hardware-validated binaries and does not need Git, Distrobox, a compiler, CMake, or `sudo`.
+
+1. Download `serialosc-steamos-v1.4.7-x86_64.tar.gz` and its `.sha256` file from the release.
+2. Open the archive in Dolphin and extract the `serialosc-steamos-v1.4.7-x86_64` folder.
+3. Open that folder and double-click **Install SerialOSC.sh**. When Dolphin offers **Launch** or **Open with Kate**, choose **Launch**.
+4. Konsole shows exactly what will change. Press Enter to install, then leave the window open for the automatic doctor report.
+
+The click installer opens its own interactive Konsole, verifies the archive's internal `SHA256SUMS` before changing anything, writes a complete log under `~/.local/state/serialosc-steamos`, and reports either `INSTALLATION PASSED` or `INSTALLATION FAILED`. `install.sh` remains the command-line authority underneath the launcher.
+
+The launcher is specifically for SteamOS Desktop Mode under KDE Plasma with Konsole. It resolves its own directory, so spaces in the extraction path are supported. An accidental graphical launch of the lower-level `install.sh` is redirected to the same interactive installer instead of running silently. Deliberate headless automation must opt in with `./install.sh --noninteractive`.
+
+Archive extraction should preserve the launcher's executable bit. If a nonstandard extractor removes it, re-extract with Ark rather than bypassing the warning.
+
+## Install from a source checkout
 
 Run:
 
@@ -22,7 +37,7 @@ cd serialOSC-steam-deck
 ./install.sh
 ```
 
-`install.sh` builds SerialOSC in a dedicated Debian 12 Distrobox and installs only these user-owned files:
+In a source checkout, `install.sh` builds SerialOSC in a dedicated Debian 12 Distrobox. In a downloaded release, it verifies and uses the included binaries instead. Both paths install only these user-owned files:
 
 ```text
 ~/.local/libexec/serialosc/serialoscd
@@ -35,7 +50,7 @@ cd serialOSC-steam-deck
 ~/.local/libexec/serialosc-tests/osc_workbench.py
 ```
 
-The first build downloads a Debian container and build dependencies. OS packages remain inside `serialosc-build`; CMake tooling and build output remain under the repository's ignored `build/` directory. SteamOS itself stays read-only.
+The first source build downloads a Debian container and build dependencies. OS packages remain inside `serialosc-build`; CMake tooling and build output remain under the repository's ignored `build/` directory. SteamOS itself stays read-only.
 
 ## Verify
 
@@ -59,7 +74,7 @@ With every Monome unplugged, start a session on the SteamOS host:
 serialosc-hardware-test begin post-update-matrix
 ```
 
-The command refuses to begin unless SteamOS is read-only, the exact validated binaries and user service are healthy, legacy services are not active, and no device is already under test. See [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) for the device matrix and controlled procedures.
+The command refuses to begin unless SteamOS is read-only, the exact validated binaries and user service are healthy, legacy services are inactive and disabled, and no device is already under test. See [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) for the device matrix and controlled procedures.
 
 ## Remove
 
@@ -77,7 +92,7 @@ If `install.sh` detects the former `~/.config/systemd/user/serialosc.service`, i
 ./migrate-legacy-user-service.sh
 ```
 
-Old system-level units under `/etc/systemd/system` are reported but never changed by the rootless installer. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the exact legacy findings and cleanup boundary.
+Old system-level units under `/etc/systemd/system` are reported but never changed by the rootless installer. The installer refuses to proceed while either known legacy service is active **or enabled**; a failed process with an enabled boot entry is still a conflict. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the exact legacy findings and cleanup boundary.
 
 If the former installer enabled its two known system services, preserve any customized unit files and disable the obsolete boot entries before installing:
 
@@ -93,7 +108,7 @@ That command does not delete the old unit files. `serialosc-doctor` continues to
 ./build.sh
 ```
 
-The archive and checksum are written under `dist/`. The archive includes the pinned source (including submodules), build receipt, licenses, binaries, service, installer, uninstaller, diagnostics, and hardware workbench.
+The archive and checksum are written under `dist/`. The archive includes the pinned source (including submodules), build receipt, licenses, binaries, service, click launcher, command-line installer, uninstaller, diagnostics, and hardware workbench. Its internal manifest covers every packaged file and is enforced by the installer.
 
 Verify the outer archive checksum from the repository root with:
 
