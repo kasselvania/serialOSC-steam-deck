@@ -148,8 +148,24 @@ returned both to free port `0`. Fresh PID `221424` started fail-closed,
 explicitly recovered both, and released both dark/free. SteamOS remained
 read-only and SerialOSC stayed active with `NRestarts=0`.
 
-The Arc pair, three-device, Bitwig, dock/lifecycle, and remaining matrix rows
-are still open. The package therefore remains a `lease-candidate`.
+The legacy-128 plus four-ring Arc pair then passed M2. Legacy held callback
+`17780`; Arc held `17782`. Distinct Grid/ring output, exact `a_key 0 0 1/0`,
+and signed `arc_delta 0 1` input stayed isolated. Active legacy unplug freed
+only port `16874`; Arc retained its lease, pattern, and fresh
+`arc_delta 3 -2` input. Legacy returned with the same ID and port as dark/free,
+blocked preselection output, reclaimed explicitly, and released without
+disturbing Arc. Active Arc unplug freed only port `11564`; legacy retained its
+lease, pattern, and exact `a_key 15 0 1/0` input. Arc returned with the same ID
+and port as dark/free, blocked preselection output, reclaimed explicitly, and
+released without disturbing legacy. The patches used separate PlugData PIDs:
+killing each in turn expired and visibly darkened only its own device while the
+survivor continued. Each fresh process started fail-closed and recovered only
+after explicit action. Final release left both dark/free. SteamOS remained
+read-only and SerialOSC stayed active with `NRestarts=0`.
+
+Zero-plus-Arc, all-three shared-host, Bitwig, dock/lifecycle, and remaining
+matrix rows are still open. The package therefore remains a
+`lease-candidate`.
 
 ## Device matrix
 

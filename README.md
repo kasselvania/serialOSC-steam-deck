@@ -6,7 +6,7 @@ Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) pack
 
 This development branch packages the opt-in leased-destination fork at exact revision `7187832c349202b1a94a9b10080ae57d40069946`. The lease protocol lets an aware client renew its ownership of a Grid or Arc callback. If the client or plug-in host dies, SerialOSC expires the lease, darkens that device, and frees its destination. Clients that never send `/sys/lease/*` retain the traditional SerialOSC behavior.
 
-The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed direct-protocol and complete single-device PlugData standalone slices for the legacy 128, Zero/256, and four-ring Arc, including hotplug and host death. It remains deliberately labeled `lease-candidate` until simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
+The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed direct-protocol and complete single-device PlugData standalone slices for the legacy 128, Zero/256, and four-ring Arc, including hotplug and host death, plus the legacy-plus-Zero and legacy-plus-Arc simultaneous lanes. It remains deliberately labeled `lease-candidate` until Zero-plus-Arc, all-three shared-host, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
 
 ## Script contract
 
@@ -132,6 +132,21 @@ active, then SerialOSC expired both, visibly darkened both Grids, and returned
 both to free port `0`. A fresh host started fail-closed, recovered only after
 explicit selection/probe/claim, and completed final all-dark release. SteamOS
 remained read-only and SerialOSC retained zero restarts.
+
+The legacy-128 plus four-ring Arc pair then passed the second candidate
+simultaneous-device lane. Renewable Grid callback `17780` and Arc callback
+`17782`, distinct Grid/ring patterns, exact Grid key input, and signed Arc
+encoder input stayed isolated. Active unplug/reconnect in both directions
+preserved the survivor's lease, pattern, and fresh input while the returning
+device stayed dark/free until explicit rediscovery, selection, probe, and
+reclaim. Each device released without disturbing the other. The Grid and Arc
+workbenches were separate processes: killing each one in turn expired and
+darkened only its own device while the other process and device continued. A
+fresh replacement process made no claim and recovered only after explicit
+operator action. This is reciprocal process-isolation evidence, not the
+still-required all-device shared-host-death row. Final release left both
+devices visibly dark and independently free at port `0`; SteamOS remained
+read-only and SerialOSC retained zero restarts.
 
 ## SteamOS safety boundary
 

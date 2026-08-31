@@ -83,6 +83,17 @@ death expired and visibly darkened both leases; a fresh host started
 fail-closed, explicitly recovered both, and released both to free port `0`.
 SteamOS remained read-only and SerialOSC retained zero restarts.
 
+The legacy-128 plus four-ring Arc pair then passed the second candidate
+simultaneous-device row. Separate `17780` and `17782` leases, distinguishable
+Grid/ring output, exact Grid key input, and signed Arc delta input stayed
+isolated. Hotplug in both directions preserved the survivor and returned the
+reconnected device dark/free before explicit reclaim. Each device released
+independently. Because the Grid and Arc patches ran in separate PlugData
+processes, reciprocal process death proved isolation rather than shared-host
+death: only the dead process's device expired and darkened, and each fresh
+process started fail-closed. Final release returned both devices to free port
+`0`. SteamOS remained read-only and SerialOSC retained zero restarts.
+
 This is partial candidate evidence, not SteamOS release acceptance.
 
 ## Required SteamOS acceptance
@@ -91,7 +102,7 @@ This is partial candidate evidence, not SteamOS release acceptance.
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Verify the remaining Arc two-device combinations and all three devices.
+- Verify Zero-plus-Arc and all three devices.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
 - Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
 - Verify unplug/replug, dock behavior, and survivor isolation.

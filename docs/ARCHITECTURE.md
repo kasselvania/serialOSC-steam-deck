@@ -69,8 +69,21 @@ before explicit reclaim. Each slot released independently. Abrupt death of the
 shared PlugData process expired and visibly darkened both leases; a fresh host
 started fail-closed, explicitly recovered both, and released both to free port
 `0`. SteamOS remained read-only and SerialOSC retained `NRestarts=0`. This
-narrows the open matrix but does not promote the hashes: the Arc pairs,
-three-device, Bitwig, and remaining SteamOS lifecycle rows are still required.
+narrowed the open matrix but did not promote the hashes.
+
+The legacy-128 plus four-ring Arc pair then passed the second simultaneous
+lane. Renewable callbacks `17780` and `17782`, distinguishable Grid/ring
+output, exact Grid key input, and signed Arc delta input remained isolated.
+Active removal and same-ID/same-port dark/free recovery passed in both
+directions, including fresh survivor input and blocked output before explicit
+reclaim. Each session released independently. The Grid and Arc patches ran in
+separate PlugData processes; killing each process in turn expired and darkened
+only its device while the survivor continued, and each fresh replacement
+started fail-closed before explicit recovery. This proves reciprocal process
+isolation, not shared-host death. Final readback found both devices dark/free.
+SteamOS remained read-only and SerialOSC retained `NRestarts=0`. The pinned
+hashes remain candidates: Zero-plus-Arc, all-three shared-host, Bitwig, and the
+remaining SteamOS lifecycle rows are still required.
 
 ## Process model
 
