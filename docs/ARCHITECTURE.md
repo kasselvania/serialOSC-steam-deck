@@ -1,5 +1,24 @@
 # Architecture and validation boundary
 
+## Current package authority
+
+The current development package is an explicit SteamOS lease candidate, not an
+upstream SerialOSC release and not yet an accepted SteamOS release. Its source
+authority is:
+
+```text
+repository: https://github.com/kasselvania/serialosc.git
+revision:   7187832c349202b1a94a9b10080ae57d40069946
+version:    serialoscd 1.4.8 (7187832)
+channel:    lease-candidate
+base:       upstream v1.4.7 commit 94d457f80fe3721d21df5190c99bd522c711185a
+```
+
+`package.env` is the single package identity used by the build and installer.
+The build verifies the root revision and every Git submodule before compiling.
+The archive then carries the complete source tree, a build receipt, executable
+checksums, and a manifest covering every packaged file.
+
 ## Process model
 
 SerialOSC is one supervisor, not one service per serial port:
@@ -13,6 +32,24 @@ serialoscd
 The three executables must remain in the same directory because `serialoscd` resolves its helper paths relative to its own executable.
 
 The rootless service therefore launches exactly one `serialoscd` from `~/.local/libexec/serialosc`. It does not use a templated `serialoscd@tty.service`.
+
+## Opt-in lease model
+
+Traditional SerialOSC stores one outgoing host, port, and prefix for each
+device. UDP has no connection-close event, so a killed application or DAW
+plug-in can leave that destination stale and the physical LEDs frozen.
+
+The fork adds opt-in `/sys/lease/*` messages to the existing per-device worker.
+An aware client acquires or explicitly takes over a destination with a token
+and bounded TTL, renews it while alive, and releases it deliberately. Expiry,
+release, or displacement darkens only that device and clears its runtime
+callback. The initial PlugData policy uses a 6000 ms TTL and renews every 2000
+ms.
+
+Compatibility is a hard boundary: a client that sends no lease messages keeps
+the historical SerialOSC behavior. A lease token prevents accidental
+cross-session renewal or release; it is not authentication or network access
+control.
 
 ## SteamOS boundary
 
@@ -29,9 +66,22 @@ The Deck kernel normally loads `ftdi_sio` when an FTDI-backed Monome is connecte
 
 ## Build boundary
 
-The build runs in a dedicated rootless Debian 12 Distrobox. Build-only OS packages remain in that container; CMake tooling and outputs remain in the repository's ignored `build/` directory.
+The build runs in a dedicated rootless Debian 12 Distrobox. Build-only OS packages remain in that container; CMake tooling and outputs remain in the repository's ignored `build/` directory. `build.sh` builds and packages only. `install.sh` installs verified built bytes only. `build.sh --install` composes those two jobs after every build gate succeeds.
 
 Debian 12 is intentional: its older glibc produces artifacts whose highest required glibc symbol is 2.34, instead of the 2.38 requirement observed from a Debian 13 build. Private dependencies (`libuv`, `liblo`, `libmonome`, and `confuse`) are built from pinned upstream source. Runtime linkage remains limited to the host's stable `libc`, `libm`, and `libudev` interfaces. Zeroconf uses the host's DNS-SD compatibility library at runtime.
+
+The lease candidate pins these submodule revisions:
+
+| Dependency | Revision |
+|---|---|
+| liblo | `025f277275e6b81032a72dfb0b131adab80363e6` |
+| libmonome | `9055ea22fd824839be821c10f6e9b13e9d2aa3cd` |
+| libuv | `f87c8e4f70f234b952d9c47b15fb567f78e5f399` |
+| optparse | `a86877ed301d89a4eb64feb08f23af395aede2ed` |
+
+The CMake build runs the fork's lease state, runtime, OSC, and event-loop tests
+before packaging. It then inspects dynamic dependencies and rejects binaries
+whose required glibc exceeds 2.34.
 
 Because upstream links liblo statically, every generated distributable includes the complete corresponding SerialOSC source tree with populated submodules, the exact build script, and license texts.
 
@@ -50,7 +100,11 @@ Its principal defects were:
 
 The rootless installer never edits these legacy files. It permits preserved unit files only when their boot entries are disabled and their services are inactive. An active, failed-but-enabled, or inactive-but-enabled legacy service is a hard preflight failure because it can retry or contend with the user service after boot.
 
-## Observed hardware proof
+## Accepted 1.4.7 hardware proof
+
+Everything below this heading describes the previous upstream 1.4.7 package.
+It remains the accepted rollback baseline. It must not be presented as physical
+acceptance of the lease-candidate bytes.
 
 On 2026-08-21, a legacy Monome 128 was tested on SteamOS 3.7.20:
 

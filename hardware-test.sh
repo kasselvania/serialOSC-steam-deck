@@ -7,19 +7,23 @@ readonly INSTALL_DIR="$HOME/.local/libexec/serialosc"
 readonly TEST_INSTALL_DIR="$HOME/.local/libexec/serialosc-tests"
 readonly CONFIG_DIR="$HOME/.config/serialosc"
 readonly SERVICE_TARGET="$HOME/.config/systemd/user/serialoscd.service"
+readonly BUILD_RECEIPT="$INSTALL_DIR/BUILD-RECEIPT.txt"
+readonly BINARY_MANIFEST="$INSTALL_DIR/BINARY-SHA256SUMS"
+readonly PACKAGED_SERVICE="$INSTALL_DIR/serialoscd.service"
 readonly INSTALLED_DOCTOR="$HOME/.local/bin/serialosc-doctor"
 readonly BUILD_CONTAINER="${SERIALOSC_BUILD_CONTAINER:-serialosc-build}"
 readonly STATE_ROOT="${SERIALOSC_TEST_STATE_ROOT:-$HOME/.local/state/serialosc-steamos/hardware-tests}"
 readonly ACTIVE_FILE="$STATE_ROOT/.active-session"
-readonly EXPECTED_VERSION='serialoscd 1.4.7 (94d457f)'
-readonly EXPECTED_SERVICE_SHA256='e5b105c2833007d12f277a7abd47e07b2d1fbf9816fddbbba1f960455c529b4a'
-readonly EXPECTED_SERIALOSCD_SHA256='a97adf0fc430ddbd98bae7f1562408e5b5c048cd1b7a3a5efa07677d7c2dadea'
-readonly EXPECTED_DETECTOR_SHA256='5d7e47954bc1a40c06350f14c07b9d96a9b7b96357e24b9e15ba4c48c6541db3'
-readonly EXPECTED_DEVICE_SHA256='5d2f0373541d3a182ef9c77484d6cd823047d0f9056f4d5209ce5f8b09dd5af4'
 
 fail() {
     printf 'ERROR: %s\n' "$*" >&2
     exit 1
+}
+
+receipt_value() {
+    local key="$1"
+    [[ -r "$BUILD_RECEIPT" ]] || return 1
+    sed -n "s/^${key}=//p" "$BUILD_RECEIPT" | sed -n '1p'
 }
 
 usage() {
@@ -153,6 +157,9 @@ install_report() {
         "$INSTALL_DIR/serialoscd" \
         "$INSTALL_DIR/serialosc-detector" \
         "$INSTALL_DIR/serialosc-device" \
+        "$BINARY_MANIFEST" \
+        "$BUILD_RECEIPT" \
+        "$PACKAGED_SERVICE" \
         "$SERVICE_TARGET" \
         "$HOME/.local/bin/serialosc-hardware-test" \
         "$TEST_INSTALL_DIR/osc_workbench.py"; do
@@ -295,7 +302,8 @@ snapshot_into() {
 }
 
 preflight() {
-    local failures=0 actual expected name count readonly_status
+    local failures=0 count readonly_status receipt_version receipt_revision
+    local expected_version package channel name
 
     preflight_fail() {
         printf 'FAIL  %s\n' "$*" >&2
@@ -323,36 +331,37 @@ preflight() {
         preflight_fail 'serialoscd.service is not active'
     fi
 
-    if [[ -x "$INSTALL_DIR/serialoscd" \
-        && "$("$INSTALL_DIR/serialoscd" -v 2>/dev/null)" == "$EXPECTED_VERSION" ]]; then
-        preflight_pass "$EXPECTED_VERSION"
+    receipt_version="$(receipt_value serialosc_version || true)"
+    receipt_revision="$(receipt_value serialosc_revision || true)"
+    package="$(receipt_value package || true)"
+    channel="$(receipt_value channel || true)"
+    expected_version="serialoscd $receipt_version (${receipt_revision:0:7})"
+    if [[ -n "$receipt_version" && -n "$receipt_revision" && -n "$package" \
+        && -x "$INSTALL_DIR/serialoscd" \
+        && "$("$INSTALL_DIR/serialoscd" -v 2>/dev/null)" == "$expected_version" ]]; then
+        preflight_pass "$expected_version from $package"
     else
-        preflight_fail 'installed SerialOSC version is not the pinned build'
+        preflight_fail 'installed SerialOSC version does not match its build receipt'
     fi
 
-    while read -r expected name; do
-        if [[ ! -f "$INSTALL_DIR/$name" ]]; then
-            preflight_fail "missing $INSTALL_DIR/$name"
-            continue
-        fi
-        actual="$(sha256sum "$INSTALL_DIR/$name" | awk '{print $1}')"
-        if [[ "$actual" == "$expected" ]]; then
-            preflight_pass "$name matches the validated packaged bytes"
-        else
-            preflight_fail "$name hash is $actual, expected $expected"
-        fi
-    done <<EOF
-$EXPECTED_SERIALOSCD_SHA256 serialoscd
-$EXPECTED_DETECTOR_SHA256 serialosc-detector
-$EXPECTED_DEVICE_SHA256 serialosc-device
-EOF
+    if [[ -n "$channel" ]]; then
+        preflight_pass "package channel is $channel"
+    else
+        preflight_fail 'build receipt has no package channel'
+    fi
+
+    if [[ -r "$BINARY_MANIFEST" ]] \
+        && (cd "$INSTALL_DIR" && sha256sum --check --strict --quiet BINARY-SHA256SUMS); then
+        preflight_pass 'all executables match the built package checksums'
+    else
+        preflight_fail 'installed executables do not match BINARY-SHA256SUMS'
+    fi
 
     if [[ -f "$SERVICE_TARGET" ]]; then
-        actual="$(sha256sum "$SERVICE_TARGET" | awk '{print $1}')"
-        if [[ "$actual" == "$EXPECTED_SERVICE_SHA256" ]]; then
-            preflight_pass 'user service matches the packaged unit'
+        if [[ -f "$PACKAGED_SERVICE" ]] && cmp -s "$PACKAGED_SERVICE" "$SERVICE_TARGET"; then
+            preflight_pass 'user service matches the built package'
         else
-            preflight_fail "user service hash is $actual, expected $EXPECTED_SERVICE_SHA256"
+            preflight_fail 'user service differs from the built package'
         fi
     else
         preflight_fail "missing $SERVICE_TARGET"

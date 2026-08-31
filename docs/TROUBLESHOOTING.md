@@ -10,20 +10,51 @@ The doctor distinguishes hard failures from warnings and does not change the mac
 
 ## Dolphin offers Launch or Open with Kate
 
-Choose **Launch** for `Install SerialOSC.sh`. The script verifies the package, opens Konsole, and waits for confirmation before installing.
+Choose **Launch** for `install.sh`. The script verifies the package, opens Konsole, and waits for confirmation before installing. `Install SerialOSC.sh` remains an equivalent compatibility launcher.
 
 If no Konsole window opens:
 
-1. Confirm the file is named `Install SerialOSC.sh`.
+1. Confirm the file is named `install.sh` or `Install SerialOSC.sh`.
 2. Re-extract the archive with Ark so executable permissions are preserved.
 3. From Konsole, run:
 
    ```bash
-   cd "/path/to/serialosc-steamos-v1.4.7-x86_64"
-   ./Install\ SerialOSC.sh
+   cd "/path/to/extracted-serialosc-steamos-folder"
+   ./install.sh
    ```
 
 Do not bypass a checksum or permission warning by copying scripts out of the package.
+
+## install.sh says no built payload was found
+
+You are in a source checkout, not an extracted release. `install.sh` is intentionally install-only and will never download or compile SerialOSC. Build first:
+
+```bash
+./build.sh
+./install.sh
+```
+
+Or explicitly compose both jobs:
+
+```bash
+./build.sh --install
+```
+
+If you downloaded a release archive, make sure you extracted the whole folder rather than copying out only one script.
+
+## The doctor warns that a lease candidate is installed
+
+That warning is expected while testing the pinned `7187832` SteamOS build. It means the installed bytes have a verified build receipt but have not yet been promoted to an accepted SteamOS release. It is not a service failure. Do not remove the warning or relabel the package until the exact candidate completes the hardware and host-death matrix.
+
+## Candidate installation failed and restored the old build
+
+The installer stages the replacement before stopping the old service. If activation or installed-byte verification fails, it automatically restores the previous installation and service state. Inspect the failed candidate and rollback receipt under:
+
+```text
+~/.local/state/serialosc-steamos/rollback-*/
+```
+
+Retain that directory and the newest installer log for diagnosis. Do not delete the working rollback baseline while candidate acceptance is in progress.
 
 ## Installation failed
 

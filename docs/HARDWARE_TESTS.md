@@ -2,18 +2,20 @@
 
 This protocol validates the installed, rootless SerialOSC service without changing SteamOS system files. Run every command on the **SteamOS host** in Desktop Mode or over SSH. Do not enter an application or build Distrobox first.
 
+The current target is the `lease-candidate` build at SerialOSC revision `7187832`. The older 1.4.7 package remains the accepted rollback baseline. Evidence from that older build is useful regression context but is not acceptance of the candidate's x86-64 bytes.
+
 The workbench records machine evidence automatically. Physical facts such as LEDs, key presses, encoder motion, cable removal, dock use, and audio cues still require a human observation; record them with `serialosc-hardware-test note`.
 
 ## What the resources actually are
 
-The pinned SerialOSC 1.4.7 source establishes four separate resources:
+The pinned SerialOSC source establishes four separate resources:
 
 1. `serialoscd` owns the supervisor discovery socket on UDP/12002.
 2. Each detected device gets one `serialosc-device` worker and one device-server UDP port. Its clean exit saves that port under `~/.config/serialosc`; a later connection tries to reuse it.
 3. A client supplies its own OSC callback UDP port through `/sys/host` and `/sys/port`.
 4. The device worker opens the serial tty with `O_RDWR | O_NOCTTY | O_NONBLOCK`.
 
-Upstream does **not** request `TIOCEXCL`, `flock`, or a lockfile for the tty. A second tty open is therefore a characterization test, not an assertion that the kernel must reject it. The workbench's `tty-open` command performs no reads, writes, or termios changes.
+SerialOSC does **not** request `TIOCEXCL`, `flock`, or a lockfile for the tty. A second tty open is therefore a characterization test, not an assertion that the kernel must reject it. The workbench's `tty-open` command performs no reads, writes, or termios changes.
 
 The per-device UDP port has a different contract. If its saved port is already bound, that worker exits before it is ready. The supervisor does not automatically respawn that failed worker while the same USB add remains current. Recovery requires a fresh remove/add event (unplug/replug) or a supervisor restart. The conflict test below verifies that behavior without altering the OS.
 
@@ -29,7 +31,9 @@ serialosc-hardware-test begin post-update-matrix
 
 - SteamOS read-only mode is enabled;
 - the user service is active and enabled;
-- the installed binaries match the hardware-validated package hashes;
+- the installed version matches its exact build receipt;
+- all installed binaries match that built package's checksum manifest;
+- the active user service matches the packaged unit;
 - UDP/12002 is listening;
 - known legacy services are inactive and disabled;
 - no device worker or OSC-managed device is already present.
@@ -54,7 +58,7 @@ serialosc-hardware-test session
 serialosc-hardware-test finish
 ```
 
-The interactive OSC session discovers all SerialOSC-managed devices, saves each device's original callback and prefix, gives it a session-specific prefix, and prints key/encoder events. Its commands are:
+The interactive OSC session discovers all SerialOSC-managed devices, saves each device's original callback and prefix, gives it a session-specific prefix, and prints key/encoder events. This is the traditional-client compatibility lane: it deliberately uses existing `/sys/*` messages, not leases. Its commands are:
 
 ```text
 devices
@@ -67,6 +71,18 @@ quit
 The session classifies a device as a grid only when `/sys/size` reports two positive dimensions, or as an arc when SerialOSC's advertised device name contains `arc`. An ambiguous device stops configuration. `grid` refuses arc targets, `ring` refuses grid targets, and `all-off` sends only the output family valid for each device. For arcs, cleanup turns off only ring numbers explicitly addressed during that session; it does not assume two-ring or four-ring hardware. This boundary is safety-critical: during physical testing, sending arc ring commands to a legacy grid left key input working while LED output stopped until subsequent restoration traffic recovered it. Cross-capability serial output is therefore never a valid probe.
 
 Normal exit, EOF, Ctrl-C, and partial configuration failure all run cleanup. Cleanup turns test lights off and restores every device's original OSC host, port, and prefix.
+
+## Lease-specific acceptance lanes
+
+The traditional OSC session above cannot prove lease behavior. Candidate acceptance adds three distinct lanes after ordinary discovery and compatibility pass:
+
+1. **Protocol lane:** query `/sys/lease/info`, acquire or explicitly take over with a unique token, verify the exact grant/state readback, renew beyond the initial TTL, darken and release, and independently verify `free` with port `0`.
+2. **Standalone PlugData lane:** use the lease-enabled workbench, verify device-specific output and input, orderly release, hot-unplug/reselect/reclaim, and abrupt PlugData process death followed by automatic darkness and free state.
+3. **Bitwig host lane:** run the same workbench inside PlugData CLAP, verify isolation from a standalone owner, then kill the exact plug-in host while devices are leased. SerialOSC must expire each abandoned lease without being restarted.
+
+The authoritative PlugData workbench for this candidate is the exact `PlugData-Monome-Devices` bundle associated with commit `898885cbc05ca218f23a3ed8f74fe14b9f215f6f`. Do not substitute the historical `monome-object.pd` retained in this repository. Every lane must record the SerialOSC build receipt and the PlugData workbench commit together.
+
+The candidate policy is a 6000 ms TTL renewed every 2000 ms. A successful renewal may be intentionally quiet in the PlugData console. Evidence comes from state readback, continued operation beyond the first TTL, daemon transition logs, orderly release, and expiry—not from console spam.
 
 ## Device matrix
 

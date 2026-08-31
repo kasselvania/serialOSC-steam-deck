@@ -3,6 +3,9 @@ set -uo pipefail
 
 readonly INSTALL_DIR="$HOME/.local/libexec/serialosc"
 readonly SERVICE_TARGET="$HOME/.config/systemd/user/serialoscd.service"
+readonly BUILD_RECEIPT="$INSTALL_DIR/BUILD-RECEIPT.txt"
+readonly BINARY_MANIFEST="$INSTALL_DIR/BINARY-SHA256SUMS"
+readonly PACKAGED_SERVICE="$INSTALL_DIR/serialoscd.service"
 readonly CURRENT_USER="${USER:-$(id -un)}"
 
 failures=0
@@ -11,6 +14,12 @@ warnings=0
 pass() { printf 'PASS  %s\n' "$*"; }
 warn() { printf 'WARN  %s\n' "$*"; warnings=$((warnings + 1)); }
 fail() { printf 'FAIL  %s\n' "$*"; failures=$((failures + 1)); }
+
+receipt_value() {
+    local key="$1"
+    [[ -r "$BUILD_RECEIPT" ]] || return 1
+    sed -n "s/^${key}=//p" "$BUILD_RECEIPT" | sed -n '1p'
+}
 
 printf 'SerialOSC Steam Deck doctor\n\n'
 
@@ -54,6 +63,13 @@ for name in serialoscd serialosc-detector serialosc-device; do
     fi
 done
 
+if [[ -r "$BINARY_MANIFEST" ]] \
+    && (cd "$INSTALL_DIR" && sha256sum --check --strict --quiet BINARY-SHA256SUMS); then
+    pass 'installed executables match the built package receipt'
+else
+    fail 'installed executables do not match BINARY-SHA256SUMS'
+fi
+
 if command -v ldconfig >/dev/null 2>&1 \
     && ldconfig -p 2>/dev/null | grep -F 'libdns_sd.so.1 ' >/dev/null; then
     pass 'Zeroconf runtime library libdns_sd.so.1 is available'
@@ -63,15 +79,42 @@ fi
 
 if [[ -x "$INSTALL_DIR/serialoscd" ]]; then
     version="$("$INSTALL_DIR/serialoscd" -v 2>&1)"
-    if [[ "$version" == 'serialoscd 1.4.7 (94d457f)' ]]; then
+    receipt_version="$(receipt_value serialosc_version || true)"
+    receipt_revision="$(receipt_value serialosc_revision || true)"
+    expected_version="serialoscd $receipt_version (${receipt_revision:0:7})"
+    if [[ -n "$receipt_version" && -n "$receipt_revision" \
+        && "$version" == "$expected_version" ]]; then
         pass "$version"
     else
-        fail "unexpected version: $version"
+        fail "version $version does not match the installed build receipt"
     fi
+fi
+
+if [[ -r "$BUILD_RECEIPT" ]]; then
+    package="$(receipt_value package || true)"
+    channel="$(receipt_value channel || true)"
+    revision="$(receipt_value serialosc_revision || true)"
+    if [[ -n "$package" && -n "$channel" && -n "$revision" ]]; then
+        pass "build receipt: $package at $revision"
+        if [[ "$channel" == 'lease-candidate' ]]; then
+            warn 'lease candidate is installed; SteamOS physical acceptance is not yet a release claim'
+        else
+            pass "package channel is $channel"
+        fi
+    else
+        fail 'build receipt is incomplete'
+    fi
+else
+    fail "build receipt is missing: $BUILD_RECEIPT"
 fi
 
 if [[ -f "$SERVICE_TARGET" ]]; then
     pass "user service file exists at $SERVICE_TARGET"
+    if [[ -f "$PACKAGED_SERVICE" ]] && cmp -s "$PACKAGED_SERVICE" "$SERVICE_TARGET"; then
+        pass 'user service matches the built package'
+    else
+        fail 'user service differs from the built package'
+    fi
 else
     fail "user service file is missing: $SERVICE_TARGET"
 fi

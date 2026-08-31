@@ -3,30 +3,35 @@ set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly ROOT_DIR
-readonly BUILD_CONTAINER="${SERIALOSC_BUILD_CONTAINER:-serialosc-build}"
-readonly BUILD_IMAGE="${SERIALOSC_BUILD_IMAGE:-docker.io/library/debian:12}"
-readonly UPSTREAM_URL="https://github.com/monome/serialosc.git"
-readonly UPSTREAM_TAG="v1.4.7"
-readonly UPSTREAM_COMMIT="94d457f80fe3721d21df5190c99bd522c711185a"
-readonly LIBLO_COMMIT="983785466ad1ddad58e21f5fcc12fac32780f586"
-readonly LIBMONOME_COMMIT="dfff2bec1ce7655a21a5f3fdae1b14c5cd786f17"
-readonly LIBUV_COMMIT="b00c5d1a09c094020044e79e19f478a25b8e1431"
-readonly OPTPARSE_COMMIT="a86877ed301d89a4eb64feb08f23af395aede2ed"
-readonly CMAKE_VERSION="3.31.6"
-readonly VALIDATED_SERIALOSCD_SHA256="a97adf0fc430ddbd98bae7f1562408e5b5c048cd1b7a3a5efa07677d7c2dadea"
-readonly VALIDATED_DETECTOR_SHA256="5d7e47954bc1a40c06350f14c07b9d96a9b7b96357e24b9e15ba4c48c6541db3"
-readonly VALIDATED_DEVICE_SHA256="5d2f0373541d3a182ef9c77484d6cd823047d0f9056f4d5209ce5f8b09dd5af4"
-readonly PACKAGE_NAME="serialosc-steamos-v1.4.7-x86_64"
-readonly WORK_DIR="$ROOT_DIR/build"
-readonly SOURCE_DIR="$WORK_DIR/upstream"
-readonly COMPILE_DIR="$WORK_DIR/compile-debian12"
-readonly TOOLS_DIR="$WORK_DIR/tools-debian12"
-readonly STAGE_DIR="$WORK_DIR/$PACKAGE_NAME"
-readonly DIST_DIR="$ROOT_DIR/dist"
+readonly PACKAGE_ENV="$ROOT_DIR/package.env"
 
 fail() {
     printf 'ERROR: %s\n' "$*" >&2
     exit 1
+}
+
+[[ -r "$PACKAGE_ENV" ]] || fail "missing package identity: $PACKAGE_ENV"
+# shellcheck disable=SC1090
+source "$PACKAGE_ENV"
+
+readonly BUILD_CONTAINER="${SERIALOSC_BUILD_CONTAINER:-serialosc-build}"
+readonly BUILD_IMAGE="$SERIALOSC_BUILD_IMAGE"
+readonly PACKAGE_NAME="$SERIALOSC_PACKAGE_NAME"
+readonly WORK_DIR="$ROOT_DIR/build"
+readonly SOURCE_DIR="$WORK_DIR/serialosc-$SERIALOSC_SHORT_REVISION"
+readonly COMPILE_DIR="$WORK_DIR/compile-debian12-$SERIALOSC_SHORT_REVISION"
+readonly TOOLS_DIR="$WORK_DIR/tools-debian12"
+readonly STAGE_DIR="$WORK_DIR/$PACKAGE_NAME"
+readonly DIST_DIR="$ROOT_DIR/dist"
+
+usage() {
+    cat <<EOF
+Usage: ./build.sh [--install]
+
+Build the pinned $SERIALOSC_PACKAGE_CHANNEL SerialOSC revision in a rootless
+Debian 12 Distrobox. The default is build-only. --install runs the packaged
+installer only after the build and all build-time tests succeed.
+EOF
 }
 
 require_command() {
@@ -37,20 +42,22 @@ verify_checkout() {
     local actual
 
     actual="$(git -C "$SOURCE_DIR" rev-parse HEAD)"
-    [[ "$actual" == "$UPSTREAM_COMMIT" ]] || fail "upstream checkout is $actual, expected $UPSTREAM_COMMIT"
+    [[ "$actual" == "$SERIALOSC_REVISION" ]] \
+        || fail "SerialOSC checkout is $actual, expected $SERIALOSC_REVISION"
 
     while read -r expected path; do
         actual="$(git -C "$SOURCE_DIR/$path" rev-parse HEAD)"
-        [[ "$actual" == "$expected" ]] || fail "$path is $actual, expected $expected"
+        [[ "$actual" == "$expected" ]] \
+            || fail "$path is $actual, expected $expected"
     done <<EOF
-$LIBLO_COMMIT third-party/liblo
-$LIBMONOME_COMMIT third-party/libmonome
-$LIBUV_COMMIT third-party/libuv
-$OPTPARSE_COMMIT third-party/optparse
+$SERIALOSC_LIBLO_REVISION third-party/liblo
+$SERIALOSC_LIBMONOME_REVISION third-party/libmonome
+$SERIALOSC_LIBUV_REVISION third-party/libuv
+$SERIALOSC_OPTPARSE_REVISION third-party/optparse
 EOF
 
     if [[ -n "$(git -C "$SOURCE_DIR" status --porcelain --untracked-files=no)" ]]; then
-        fail "the pinned upstream checkout has tracked modifications"
+        fail "the pinned SerialOSC checkout has tracked modifications"
     fi
 }
 
@@ -60,7 +67,8 @@ check_binary() {
     local max_glibc
 
     [[ -x "$binary" ]] || fail "missing executable: $binary"
-    ldd_output="$(ldd "$binary" 2>&1)" || fail "could not inspect runtime dependencies for $binary"
+    ldd_output="$(ldd "$binary" 2>&1)" \
+        || fail "could not inspect runtime dependencies for $binary"
     if [[ "$ldd_output" == *'not found'* ]]; then
         printf '%s\n' "$ldd_output" >&2
         fail "runtime dependency is missing for $binary"
@@ -71,20 +79,134 @@ check_binary() {
         | sed 's/^GLIBC_//' \
         | sort -Vu \
         | tail -n 1)"
-    [[ -n "$max_glibc" ]] || fail "could not determine glibc requirement for $binary"
-    if dpkg --compare-versions "$max_glibc" gt 2.34; then
-        fail "$binary requires glibc $max_glibc; the package ceiling is 2.34"
+    [[ -n "$max_glibc" ]] \
+        || fail "could not determine glibc requirement for $binary"
+    if dpkg --compare-versions "$max_glibc" gt "$SERIALOSC_MAXIMUM_GLIBC"; then
+        fail "$binary requires glibc $max_glibc; package ceiling is $SERIALOSC_MAXIMUM_GLIBC"
     fi
 }
 
-require_validated_sha256() {
-    local path="$1"
-    local expected="$2"
-    local actual
+prepare_source() {
+    if [[ ! -d "$SOURCE_DIR/.git" ]]; then
+        [[ ! -e "$SOURCE_DIR" ]] \
+            || fail "$SOURCE_DIR exists but is not a Git checkout"
+        git clone --quiet --no-checkout "$SERIALOSC_REPOSITORY" "$SOURCE_DIR"
+        git -C "$SOURCE_DIR" checkout --quiet --detach "$SERIALOSC_REVISION"
+        git -C "$SOURCE_DIR" submodule update --quiet --init --recursive
+    fi
+    verify_checkout
+}
 
-    actual="$(sha256sum "$path" | awk '{print $1}')"
-    [[ "$actual" == "$expected" ]] \
-        || fail "$path has SHA-256 $actual, not physically validated $expected"
+stage_package() {
+    local source_date_epoch="$1"
+
+    [[ "$STAGE_DIR" == "$WORK_DIR"/serialosc-steamos-* ]] \
+        || fail "unsafe staging path: $STAGE_DIR"
+    rm -rf -- "$STAGE_DIR"
+    mkdir -p \
+        "$STAGE_DIR/bin" \
+        "$STAGE_DIR/docs" \
+        "$STAGE_DIR/licenses" \
+        "$STAGE_DIR/source" \
+        "$STAGE_DIR/systemd" \
+        "$STAGE_DIR/test"
+
+    install -m 0755 "$COMPILE_DIR/bin/serialoscd" "$STAGE_DIR/bin/serialoscd"
+    install -m 0755 "$COMPILE_DIR/bin/serialosc-detector" "$STAGE_DIR/bin/serialosc-detector"
+    install -m 0755 "$COMPILE_DIR/bin/serialosc-device" "$STAGE_DIR/bin/serialosc-device"
+    strip --strip-unneeded \
+        "$STAGE_DIR/bin/serialoscd" \
+        "$STAGE_DIR/bin/serialosc-detector" \
+        "$STAGE_DIR/bin/serialosc-device"
+
+    (
+        cd "$STAGE_DIR/bin"
+        sha256sum serialoscd serialosc-detector serialosc-device \
+            >"$STAGE_DIR/BINARY-SHA256SUMS"
+    )
+
+    install -m 0644 "$ROOT_DIR/package.env" "$STAGE_DIR/package.env"
+    install -m 0755 "$ROOT_DIR/Install SerialOSC.sh" "$STAGE_DIR/Install SerialOSC.sh"
+    install -m 0755 "$ROOT_DIR/install.sh" "$STAGE_DIR/install.sh"
+    install -m 0755 "$ROOT_DIR/install-click.sh" "$STAGE_DIR/install-click.sh"
+    install -m 0755 "$ROOT_DIR/uninstall.sh" "$STAGE_DIR/uninstall.sh"
+    install -m 0755 "$ROOT_DIR/doctor.sh" "$STAGE_DIR/doctor.sh"
+    install -m 0755 "$ROOT_DIR/migrate-legacy-user-service.sh" "$STAGE_DIR/migrate-legacy-user-service.sh"
+    install -m 0755 "$ROOT_DIR/hardware-test.sh" "$STAGE_DIR/hardware-test.sh"
+    install -m 0755 "$ROOT_DIR/build.sh" "$STAGE_DIR/build.sh"
+    install -m 0644 "$ROOT_DIR/README.md" "$STAGE_DIR/README.md"
+    for documentation in \
+        ARCHITECTURE.md \
+        HARDWARE_TESTS.md \
+        INSTALLATION.md \
+        RELEASE_NOTES.md \
+        THIRD_PARTY_LICENSES.md \
+        TROUBLESHOOTING.md; do
+        install -m 0644 "$ROOT_DIR/docs/$documentation" "$STAGE_DIR/docs/$documentation"
+    done
+    install -m 0644 "$ROOT_DIR/systemd/serialoscd.service" "$STAGE_DIR/systemd/serialoscd.service"
+    install -m 0755 "$ROOT_DIR/test/osc_workbench.py" "$STAGE_DIR/test/osc_workbench.py"
+    install -m 0644 "$ROOT_DIR/test/test_osc_workbench.py" "$STAGE_DIR/test/test_osc_workbench.py"
+    install -m 0755 "$ROOT_DIR/test/test_install_bundle.sh" "$STAGE_DIR/test/test_install_bundle.sh"
+
+    install -m 0644 "$SOURCE_DIR/COPYRIGHT" "$STAGE_DIR/licenses/serialosc-COPYRIGHT"
+    install -m 0644 "$SOURCE_DIR/third-party/liblo/COPYING" "$STAGE_DIR/licenses/liblo-COPYING"
+    install -m 0644 "$SOURCE_DIR/third-party/libmonome/COPYRIGHT" "$STAGE_DIR/licenses/libmonome-COPYRIGHT"
+    install -m 0644 "$SOURCE_DIR/third-party/libuv/LICENSE" "$STAGE_DIR/licenses/libuv-LICENSE"
+    install -m 0644 "$SOURCE_DIR/third-party/libuv/LICENSE-extra" "$STAGE_DIR/licenses/libuv-LICENSE-extra"
+    install -m 0644 "$SOURCE_DIR/third-party/libuv/LICENSE-docs" "$STAGE_DIR/licenses/libuv-LICENSE-docs"
+    install -m 0644 "$ROOT_DIR/docs/THIRD_PARTY_LICENSES.md" "$STAGE_DIR/licenses/THIRD_PARTY_LICENSES.md"
+
+    tar --exclude-vcs --sort=name --mtime="@$source_date_epoch" \
+        --owner=0 --group=0 --numeric-owner \
+        -C "$SOURCE_DIR" -czf \
+        "$STAGE_DIR/source/serialosc-$SERIALOSC_SHORT_REVISION-with-submodules.tar.gz" .
+
+    cat >"$STAGE_DIR/BUILD-RECEIPT.txt" <<EOF
+package=$PACKAGE_NAME
+channel=$SERIALOSC_PACKAGE_CHANNEL
+serialosc_repository=$SERIALOSC_REPOSITORY
+serialosc_version=$SERIALOSC_VERSION
+serialosc_revision=$SERIALOSC_REVISION
+liblo_revision=$SERIALOSC_LIBLO_REVISION
+libmonome_revision=$SERIALOSC_LIBMONOME_REVISION
+libuv_revision=$SERIALOSC_LIBUV_REVISION
+optparse_revision=$SERIALOSC_OPTPARSE_REVISION
+build_image=$BUILD_IMAGE
+builder_os=$PRETTY_NAME
+cmake_version=$SERIALOSC_CMAKE_VERSION
+compiler=$(cc --version | sed -n '1p')
+zeroconf=ON
+maximum_required_glibc=$SERIALOSC_MAXIMUM_GLIBC
+direct_runtime_libraries=libc.so.6,libm.so.6,libudev.so.1
+dynamically_loaded_runtime_library=libdns_sd.so.1
+lease_protocol=opt-in,v1
+hardware_acceptance=macos-complete,steamos-pending
+hardware_workbench=host-side,evidence-preserving,no-system-writes
+installer=install-only,transactional,user-service
+EOF
+
+    (
+        cd "$STAGE_DIR"
+        find . -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | xargs -0 sha256sum \
+            >SHA256SUMS
+    )
+    "$STAGE_DIR/install.sh" --verify-bundle
+
+    mkdir -p "$DIST_DIR"
+    tar --sort=name --mtime="@$source_date_epoch" \
+        --owner=0 --group=0 --numeric-owner \
+        -C "$WORK_DIR" -czf "$DIST_DIR/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
+    (
+        cd "$DIST_DIR"
+        sha256sum "$PACKAGE_NAME.tar.gz" >"$PACKAGE_NAME.tar.gz.sha256"
+    )
+
+    printf '\nBuilt package:\n  %s\n  %s\n' \
+        "$DIST_DIR/$PACKAGE_NAME.tar.gz" \
+        "$DIST_DIR/$PACKAGE_NAME.tar.gz.sha256"
 }
 
 build_inside_container() {
@@ -93,11 +215,12 @@ build_inside_container() {
     local source_date_epoch
     local jobs
 
-    [[ "$(uname -m)" == "x86_64" ]] || fail "this package currently targets x86_64 only"
+    [[ "$(uname -m)" == 'x86_64' ]] \
+        || fail 'this package currently targets x86_64 only'
     # shellcheck disable=SC1091
     source /etc/os-release
-    [[ "${ID:-}" == "debian" && "${VERSION_ID:-}" == 12* ]] \
-        || fail "the build container must be Debian 12; found ${PRETTY_NAME:-unknown}"
+    [[ "${ID:-}" == 'debian' && "${VERSION_ID:-}" == 12* ]] \
+        || fail "build container must be Debian 12; found ${PRETTY_NAME:-unknown}"
 
     if [[ "$EUID" -ne 0 ]]; then
         require_command sudo
@@ -118,151 +241,86 @@ build_inside_container() {
     mkdir -p "$WORK_DIR"
     if [[ ! -x "$cmake_bin" ]]; then
         python3 -m venv "$TOOLS_DIR"
-        "$TOOLS_DIR/bin/pip" install "cmake==$CMAKE_VERSION"
+        "$TOOLS_DIR/bin/pip" install "cmake==$SERIALOSC_CMAKE_VERSION"
     fi
-    [[ "$("$cmake_bin" --version | sed -n '1p')" == "cmake version $CMAKE_VERSION" ]] \
-        || fail "expected CMake $CMAKE_VERSION in $TOOLS_DIR"
+    [[ "$("$cmake_bin" --version | sed -n '1p')" == \
+        "cmake version $SERIALOSC_CMAKE_VERSION" ]] \
+        || fail "expected CMake $SERIALOSC_CMAKE_VERSION in $TOOLS_DIR"
 
-    if [[ ! -d "$SOURCE_DIR/.git" ]]; then
-        [[ ! -e "$SOURCE_DIR" ]] || fail "$SOURCE_DIR exists but is not a Git checkout"
-        git clone --quiet --recurse-submodules --branch "$UPSTREAM_TAG" --depth 1 \
-            "$UPSTREAM_URL" "$SOURCE_DIR"
-    fi
-    verify_checkout
-
-    source_date_epoch="$(git -C "$SOURCE_DIR" show -s --format=%ct "$UPSTREAM_COMMIT")"
+    prepare_source
+    source_date_epoch="$(git -C "$SOURCE_DIR" show -s --format=%ct "$SERIALOSC_REVISION")"
     export SOURCE_DATE_EPOCH="$source_date_epoch"
     export CFLAGS="-ffile-prefix-map=$ROOT_DIR=/usr/src/serialosc-steamos"
     export CXXFLAGS="$CFLAGS"
 
-    (
-        cd "$SOURCE_DIR"
-        "$cmake_bin" --fresh -S . -B "$COMPILE_DIR" -DCMAKE_BUILD_TYPE=Release
-    )
+    "$cmake_bin" --fresh -S "$SOURCE_DIR" -B "$COMPILE_DIR" \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_TESTING=ON
     grep -q '^build_with_zeroconf:BOOL=ON$' "$COMPILE_DIR/CMakeCache.txt" \
-        || fail "CMake did not enable Zeroconf"
+        || fail 'CMake did not enable Zeroconf'
 
     jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2')"
     "$cmake_bin" --build "$COMPILE_DIR" --clean-first --parallel "$jobs"
+    "$TOOLS_DIR/bin/ctest" --test-dir "$COMPILE_DIR" --output-on-failure
 
-    [[ "$("$COMPILE_DIR/bin/serialoscd" -v)" == 'serialoscd 1.4.7 (94d457f)' ]] \
-        || fail "serialoscd does not contain the expected version receipt"
+    [[ "$("$COMPILE_DIR/bin/serialoscd" -v)" == "$SERIALOSC_EXPECTED_VERSION" ]] \
+        || fail "serialoscd does not report $SERIALOSC_EXPECTED_VERSION"
     check_binary "$COMPILE_DIR/bin/serialoscd"
     check_binary "$COMPILE_DIR/bin/serialosc-detector"
     check_binary "$COMPILE_DIR/bin/serialosc-device"
 
-    [[ "$STAGE_DIR" == "$WORK_DIR"/serialosc-steamos-* ]] || fail "unsafe staging path"
-    rm -rf -- "$STAGE_DIR"
-    mkdir -p \
-        "$STAGE_DIR/bin" \
-        "$STAGE_DIR/docs" \
-        "$STAGE_DIR/licenses" \
-        "$STAGE_DIR/source" \
-        "$STAGE_DIR/systemd" \
-        "$STAGE_DIR/test"
-
-    install -m 0755 "$COMPILE_DIR/bin/serialoscd" "$STAGE_DIR/bin/serialoscd"
-    install -m 0755 "$COMPILE_DIR/bin/serialosc-detector" "$STAGE_DIR/bin/serialosc-detector"
-    install -m 0755 "$COMPILE_DIR/bin/serialosc-device" "$STAGE_DIR/bin/serialosc-device"
-    strip --strip-unneeded "$STAGE_DIR/bin/serialoscd" "$STAGE_DIR/bin/serialosc-detector" "$STAGE_DIR/bin/serialosc-device"
-    require_validated_sha256 "$STAGE_DIR/bin/serialoscd" "$VALIDATED_SERIALOSCD_SHA256"
-    require_validated_sha256 "$STAGE_DIR/bin/serialosc-detector" "$VALIDATED_DETECTOR_SHA256"
-    require_validated_sha256 "$STAGE_DIR/bin/serialosc-device" "$VALIDATED_DEVICE_SHA256"
-
-    install -m 0755 "$ROOT_DIR/Install SerialOSC.sh" "$STAGE_DIR/Install SerialOSC.sh"
-    install -m 0755 "$ROOT_DIR/install.sh" "$STAGE_DIR/install.sh"
-    install -m 0755 "$ROOT_DIR/install-click.sh" "$STAGE_DIR/install-click.sh"
-    install -m 0755 "$ROOT_DIR/uninstall.sh" "$STAGE_DIR/uninstall.sh"
-    install -m 0755 "$ROOT_DIR/doctor.sh" "$STAGE_DIR/doctor.sh"
-    install -m 0755 "$ROOT_DIR/migrate-legacy-user-service.sh" "$STAGE_DIR/migrate-legacy-user-service.sh"
-    install -m 0755 "$ROOT_DIR/hardware-test.sh" "$STAGE_DIR/hardware-test.sh"
-    install -m 0755 "$ROOT_DIR/build.sh" "$STAGE_DIR/build.sh"
-    install -m 0644 "$ROOT_DIR/README.md" "$STAGE_DIR/README.md"
-    for documentation in \
-        ARCHITECTURE.md \
-        HARDWARE_TESTS.md \
-        INSTALLATION.md \
-        THIRD_PARTY_LICENSES.md \
-        TROUBLESHOOTING.md; do
-        install -m 0644 "$ROOT_DIR/docs/$documentation" "$STAGE_DIR/docs/$documentation"
-    done
-    install -m 0644 "$ROOT_DIR/systemd/serialoscd.service" "$STAGE_DIR/systemd/serialoscd.service"
-    install -m 0755 "$ROOT_DIR/test/osc_workbench.py" "$STAGE_DIR/test/osc_workbench.py"
-    install -m 0644 "$ROOT_DIR/test/test_osc_workbench.py" "$STAGE_DIR/test/test_osc_workbench.py"
-    install -m 0755 "$ROOT_DIR/test/test_install_bundle.sh" "$STAGE_DIR/test/test_install_bundle.sh"
-
-    install -m 0644 "$SOURCE_DIR/COPYRIGHT" "$STAGE_DIR/licenses/serialosc-COPYRIGHT"
-    install -m 0644 "$SOURCE_DIR/third-party/liblo/COPYING" "$STAGE_DIR/licenses/liblo-COPYING"
-    install -m 0644 "$SOURCE_DIR/third-party/libmonome/COPYRIGHT" "$STAGE_DIR/licenses/libmonome-COPYRIGHT"
-    install -m 0644 "$SOURCE_DIR/third-party/libuv/LICENSE" "$STAGE_DIR/licenses/libuv-LICENSE"
-    install -m 0644 "$SOURCE_DIR/third-party/libuv/LICENSE-extra" "$STAGE_DIR/licenses/libuv-LICENSE-extra"
-    install -m 0644 "$SOURCE_DIR/third-party/libuv/LICENSE-docs" "$STAGE_DIR/licenses/libuv-LICENSE-docs"
-    install -m 0644 "$ROOT_DIR/docs/THIRD_PARTY_LICENSES.md" "$STAGE_DIR/licenses/THIRD_PARTY_LICENSES.md"
-
-    tar --exclude-vcs --sort=name --mtime="@$source_date_epoch" --owner=0 --group=0 --numeric-owner \
-        -C "$SOURCE_DIR" -czf "$STAGE_DIR/source/serialosc-v1.4.7-with-submodules.tar.gz" .
-
-    cat >"$STAGE_DIR/BUILD-RECEIPT.txt" <<EOF
-package=$PACKAGE_NAME
-serialosc_version=1.4.7
-serialosc_commit=$UPSTREAM_COMMIT
-liblo_commit=$LIBLO_COMMIT
-libmonome_commit=$LIBMONOME_COMMIT
-libuv_commit=$LIBUV_COMMIT
-optparse_commit=$OPTPARSE_COMMIT
-build_image=$BUILD_IMAGE
-builder_os=$PRETTY_NAME
-cmake_version=$CMAKE_VERSION
-compiler=$(cc --version | sed -n '1p')
-zeroconf=ON
-maximum_required_glibc=2.34
-direct_runtime_libraries=libc.so.6,libm.so.6,libudev.so.1
-dynamically_loaded_runtime_library=libdns_sd.so.1
-hardware_workbench=host-side,evidence-preserving,no-system-writes
-click_installer=executable-shell-entry,kde-konsole,manifest-verified
-EOF
-
-    (
-        cd "$STAGE_DIR"
-        find . -type f ! -name SHA256SUMS -print0 \
-            | sort -z \
-            | xargs -0 sha256sum \
-            > SHA256SUMS
-    )
-    "$STAGE_DIR/install.sh" --verify-bundle
-
-    mkdir -p "$DIST_DIR"
-    tar --sort=name --mtime="@$source_date_epoch" --owner=0 --group=0 --numeric-owner \
-        -C "$WORK_DIR" -czf "$DIST_DIR/$PACKAGE_NAME.tar.gz" "$PACKAGE_NAME"
-    (
-        cd "$DIST_DIR"
-        sha256sum "$PACKAGE_NAME.tar.gz" > "$PACKAGE_NAME.tar.gz.sha256"
-    )
-
-    printf '\nBuilt package:\n  %s\n  %s\n' \
-        "$DIST_DIR/$PACKAGE_NAME.tar.gz" \
-        "$DIST_DIR/$PACKAGE_NAME.tar.gz.sha256"
+    stage_package "$source_date_epoch"
 }
 
-if [[ "${1:-}" == "--inside-container" ]]; then
-    build_inside_container
-    exit 0
+run_host_build() {
+    require_command distrobox
+    require_command awk
+
+    if ! distrobox list --no-color 2>/dev/null \
+        | awk -F '|' -v wanted="$BUILD_CONTAINER" '
+            {
+                name=$2
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
+                if (name == wanted) found=1
+            }
+            END { exit(found ? 0 : 1) }
+        '; then
+        distrobox create --name "$BUILD_CONTAINER" --image "$BUILD_IMAGE" --yes
+    fi
+
+    distrobox enter "$BUILD_CONTAINER" -- \
+        /usr/bin/env bash "$ROOT_DIR/build.sh" --inside-container
+}
+
+mode='build'
+case "${1:-}" in
+    '')
+        ;;
+    --install)
+        [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+        mode='build-and-install'
+        ;;
+    --inside-container)
+        [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+        build_inside_container
+        exit 0
+        ;;
+    -h|--help)
+        [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+        usage
+        exit 0
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
+
+[[ "$(uname -s)" == 'Linux' ]] || fail 'run this build on a Linux host'
+run_host_build
+
+if [[ "$mode" == 'build-and-install' ]]; then
+    [[ -x "$STAGE_DIR/install.sh" ]] \
+        || fail "build succeeded without packaged installer: $STAGE_DIR/install.sh"
+    "$STAGE_DIR/install.sh" --noninteractive
 fi
-
-[[ "$(uname -s)" == "Linux" ]] || fail "run this build on a Linux host"
-require_command distrobox
-require_command awk
-
-if ! distrobox list --no-color 2>/dev/null \
-    | awk -F '|' -v wanted="$BUILD_CONTAINER" '
-        {
-            name=$2
-            gsub(/^[[:space:]]+|[[:space:]]+$/, "", name)
-            if (name == wanted) found=1
-        }
-        END { exit(found ? 0 : 1) }
-    '; then
-    distrobox create --name "$BUILD_CONTAINER" --image "$BUILD_IMAGE" --yes
-fi
-
-distrobox enter "$BUILD_CONTAINER" -- /usr/bin/env bash "$ROOT_DIR/build.sh" --inside-container
