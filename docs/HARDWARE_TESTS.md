@@ -80,9 +80,30 @@ The traditional OSC session above cannot prove lease behavior. Candidate accepta
 2. **Standalone PlugData lane:** use the lease-enabled workbench, verify device-specific output and input, orderly release, hot-unplug/reselect/reclaim, and abrupt PlugData process death followed by automatic darkness and free state.
 3. **Bitwig host lane:** run the same workbench inside PlugData CLAP, verify isolation from a standalone owner, then kill the exact plug-in host while devices are leased. SerialOSC must expire each abandoned lease without being restarted.
 
-The authoritative PlugData workbench for this candidate is the exact `PlugData-Monome-Devices` bundle associated with commit `898885cbc05ca218f23a3ed8f74fe14b9f215f6f`. Do not substitute the historical `monome-object.pd` retained in this repository. Every lane must record the SerialOSC build receipt and the PlugData workbench commit together.
+The authoritative PlugData workbench for the current candidate continuation is
+the exact `PlugData-Monome-Devices` bundle associated with commit
+`4ad7d9c7451c4e6aac708e8f32730e29ead3efa6`. Do not substitute the historical
+`monome-object.pd` retained in this repository. Every lane must record the
+SerialOSC build receipt and the PlugData workbench commit together.
 
 The candidate policy is a 6000 ms TTL renewed every 2000 ms. A successful renewal may be intentionally quiet in the PlugData console. Evidence comes from state readback, continued operation beyond the first TTL, daemon transition logs, orderly release, and expiry—not from console spam.
+
+### Current bounded candidate result
+
+On 2026-08-31, exact SerialOSC revision `7187832` and the pinned x86-64 binary
+hashes passed the legacy-128 direct protocol lane plus the PlugData standalone
+no-unplug/host-death slice. The attended evidence includes renewal beyond the
+first TTL, full 16-by-8 output, exact `a_key 0 0 1` and `a_key 0 0 0` input,
+orderly all-dark release to free port `0`, automatic all-dark expiry after the
+test-owned PlugData process received `SIGKILL`, and a fresh PlugData process
+that started fail-closed before explicit reselection and reclaim. SteamOS
+read-only mode remained enabled and SerialOSC stayed active with
+`NRestarts=0`.
+
+This does not complete the standalone lane defined above because its
+lease-aware hot-unplug/reconnect sub-lane is still open. The Zero, Arc,
+multi-device, Bitwig, dock/lifecycle, and remaining matrix rows are also open.
+The package therefore remains a `lease-candidate`.
 
 ## Device matrix
 

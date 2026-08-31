@@ -45,7 +45,15 @@ The fork adds an opt-in version-1 leased-destination protocol. A lease-aware cli
 
 Revision `7187832` completed macOS Apple-silicon acceptance with a legacy 128 Grid, a Pico Zero/256 Grid, and a four-ring Arc. It covered standalone PlugData, simultaneous renewable leases, explicit release, hotplug, abrupt PlugData death, and abrupt Bitwig PlugData-CLAP host death. Every abandoned lease expired, every surface darkened, and every destination became free.
 
-That is not SteamOS acceptance. The candidate must still prove its separately built x86-64 bytes on the Deck.
+That macOS evidence did not transfer automatically to SteamOS. On 2026-08-31,
+the separately built pinned x86-64 bytes passed their first bounded Deck slices
+with legacy Grid `m1000853`: direct protocol expiry and renew/release, followed
+by PlugData standalone fail-closed startup, renewal, exact input/output,
+orderly dark release, automatic dark/free expiry after abrupt PlugData death,
+and fresh fail-closed restart plus explicit reclaim. SteamOS remained read-only
+and SerialOSC did not restart.
+
+This is partial candidate evidence, not SteamOS release acceptance.
 
 ## Required SteamOS acceptance
 
@@ -53,7 +61,8 @@ That is not SteamOS acceptance. The candidate must still prove its separately bu
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Verify legacy 128, Zero/256, Arc, two-device combinations, and all three devices.
+- Complete lease-aware legacy-128 hot-unplug/reconnect/reclaim.
+- Verify Zero/256, Arc, two-device combinations, and all three devices.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
 - Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
 - Verify unplug/replug, dock behavior, and survivor isolation.

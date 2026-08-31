@@ -6,7 +6,7 @@ Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) pack
 
 This development branch packages the opt-in leased-destination fork at exact revision `7187832c349202b1a94a9b10080ae57d40069946`. The lease protocol lets an aware client renew its ownership of a Grid or Arc callback. If the client or plug-in host dies, SerialOSC expires the lease, darkens that device, and frees its destination. Clients that never send `/sys/lease/*` retain the traditional SerialOSC behavior.
 
-The fork has completed macOS standalone and Bitwig host-death acceptance. The x86-64 SteamOS build is deliberately labeled `lease-candidate` until its separate Deck acceptance is complete. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
+The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed its legacy-128 direct-protocol and PlugData standalone no-unplug/host-death slices. It remains deliberately labeled `lease-candidate` until legacy hotplug, the other devices, simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
 
 ## Script contract
 
@@ -85,6 +85,15 @@ Run `~/.local/bin/serialosc-doctor` after installation. The explicit path works 
 The accepted 1.4.7 package was physically exercised through a USB dock with a legacy FTDI Monome 128, a Pico-based 16×16 Zero/256 in SerialOSC mode, a classic four-encoder Arc, device pairs, and all three devices concurrently. Testing covered discovery, independent output and input, saved-port reuse, port conflict and release, removal order, reconnect, dock resets, and survivor-device continuity.
 
 That evidence does not automatically transfer to the new lease candidate. Its Deck acceptance must separately cover ordinary discovery, legacy-client compatibility, lease claim/renew/release/expiry, standalone PlugData, PlugData hosted in Bitwig, abrupt host death, hotplug, and multiple simultaneous devices. See [the validation boundary](docs/ARCHITECTURE.md) and [hardware protocol](docs/HARDWARE_TESTS.md).
+
+On 2026-08-31, the pinned x86-64 candidate bytes passed the first bounded Deck
+lease slices with legacy Grid `m1000853`: direct expiry and renew/release,
+PlugData fail-closed startup, explicit claim and renewal, full-surface output,
+exact top-left input, orderly dark release, automatic dark/free recovery after
+abrupt PlugData death, and fresh fail-closed restart plus explicit reclaim.
+SteamOS remained read-only and `serialoscd.service` did not restart. This is
+partial candidate evidence, not release acceptance; the untested rows above
+remain required.
 
 ## SteamOS safety boundary
 
