@@ -37,9 +37,18 @@ PlugData standalone renewal, input/output, orderly release, automatic expiry
 after abrupt PlugData death, fresh fail-closed recovery, and active-lease
 unplug/reconnect with same-ID/same-port return as dark/free before explicit
 reclaim. SteamOS remained read-only and the user SerialOSC service retained
-`NRestarts=0`. This narrows the open matrix but does not promote the hashes:
-Zero, Arc, multiple devices, Bitwig, and the remaining SteamOS lifecycle rows
-are still required.
+`NRestarts=0`.
+
+The isolated Pico Zero/256 then passed as USB `cafe:1110`, SerialOSC ID
+`m2321590`, `monome zero`, 16 by 16, on saved device port `19536`. Its bounded
+evidence covered explicit takeover of an independently unbound legacy
+destination, direct expiry and renew/release, PlugData output and exact
+bottom-right input, orderly release, automatic dark/free expiry after abrupt
+PlugData death, fresh fail-closed recovery, and active-lease hotplug with
+same-ID/same-port dark/free return before explicit reclaim. SerialOSC again
+retained `NRestarts=0`. This narrows the open matrix but does not promote the
+hashes: Arc, multiple devices, Bitwig, and the remaining SteamOS lifecycle
+rows are still required.
 
 ## Process model
 

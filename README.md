@@ -6,7 +6,7 @@ Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) pack
 
 This development branch packages the opt-in leased-destination fork at exact revision `7187832c349202b1a94a9b10080ae57d40069946`. The lease protocol lets an aware client renew its ownership of a Grid or Arc callback. If the client or plug-in host dies, SerialOSC expires the lease, darkens that device, and frees its destination. Clients that never send `/sys/lease/*` retain the traditional SerialOSC behavior.
 
-The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed its legacy-128 direct-protocol and complete single-device PlugData standalone slice, including hotplug and host death. It remains deliberately labeled `lease-candidate` until the other devices, simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
+The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed the legacy-128 and Zero/256 direct-protocol and complete single-device PlugData standalone slices, including hotplug and host death. It remains deliberately labeled `lease-candidate` until the Arc, simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
 
 ## Script contract
 
@@ -95,6 +95,17 @@ active-lease unplug/reconnect with same-ID/same-port return as dark/free before
 explicit reselection and reclaim. SteamOS remained read-only and
 `serialoscd.service` did not restart. This is partial candidate evidence, not
 release acceptance; the untested rows above remain required.
+
+The isolated Pico Zero/256 then passed as USB `cafe:1110`, SerialOSC ID
+`m2321590`, `monome zero`, 16 by 16, on saved device port `19536`. An unbound
+saved legacy destination required explicit takeover; direct expiry and
+renew/release visibly darkened and freed the device. PlugData then passed
+fail-closed probe, explicit claim and renewal, full-surface output, exact
+bottom-right press/release input, orderly release, automatic expiry after
+abrupt host death, fresh fail-closed restart, and active-lease hotplug with
+same-ID/same-port dark/free recovery before explicit reclaim. A repeated
+fresh-callback trace recorded exactly one add and one remove. SerialOSC again
+remained active with zero restarts.
 
 ## SteamOS safety boundary
 

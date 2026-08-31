@@ -103,8 +103,25 @@ ID and device port as dark/free, ignored output before explicit reselection,
 and reclaimed cleanly. SteamOS read-only mode remained enabled and SerialOSC
 stayed active with `NRestarts=0`.
 
-The Zero, Arc, multi-device, Bitwig, dock/lifecycle, and remaining matrix rows
-are still open. The package therefore remains a `lease-candidate`.
+The isolated Pico Zero/256 also passed as USB `cafe:1110`, SerialOSC ID
+`m2321590`, `monome zero`, 16 by 16, on saved port `19536`. An independently
+unbound legacy destination required explicit takeover. Direct expiry and
+renew/release visibly darkened and freed the device. PlugData then passed
+fail-closed probe, renewable claim, full-surface output, exact
+`a_key 15 15 1` and `a_key 15 15 0` input, orderly release, automatic
+dark/free expiry after abrupt process death, fresh fail-closed recovery, and
+active-lease unplug/reconnect with same-ID/same-port dark/free return before
+explicit reclaim. SerialOSC stayed active with `NRestarts=0`.
+
+One repeated discovery-monitor run initially printed the same remove twice.
+The daemon logged one disconnect; the cause was reuse of a fixed callback port
+while an undelivered one-shot notification from the earlier stopped monitor
+was still pending. Workbench commit `d893e8e` changed the monitor default to a
+fresh ephemeral callback port, and the repeated trace contained exactly one
+add and one remove.
+
+The Arc, multi-device, Bitwig, dock/lifecycle, and remaining matrix rows are
+still open. The package therefore remains a `lease-candidate`.
 
 ## Device matrix
 

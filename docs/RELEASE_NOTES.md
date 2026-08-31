@@ -54,6 +54,15 @@ fresh fail-closed restart plus explicit reclaim, and active-lease
 unplug/reconnect with same-ID/same-port return as dark/free before explicit
 reclaim. SteamOS remained read-only and SerialOSC did not restart.
 
+The isolated Pico Zero/256 then passed the same bounded lanes as USB
+`cafe:1110`, SerialOSC ID `m2321590`, `monome zero`, 16 by 16, on saved port
+`19536`. Evidence covered explicit stale-legacy takeover, direct expiry and
+renew/release, PlugData fail-closed probe, renewable claim, full-surface
+output, exact bottom-right press/release input, orderly release, automatic
+dark/free expiry after abrupt PlugData death, fresh fail-closed restart, and
+active-lease unplug/reconnect with same-ID/same-port recovery before explicit
+reclaim. SerialOSC remained active with zero restarts.
+
 This is partial candidate evidence, not SteamOS release acceptance.
 
 ## Required SteamOS acceptance
@@ -62,7 +71,7 @@ This is partial candidate evidence, not SteamOS release acceptance.
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Verify Zero/256, Arc, two-device combinations, and all three devices.
+- Verify Arc, two-device combinations, and all three devices.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
 - Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
 - Verify unplug/replug, dock behavior, and survivor isolation.
