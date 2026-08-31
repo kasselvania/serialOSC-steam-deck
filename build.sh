@@ -20,6 +20,7 @@ readonly PACKAGE_NAME="$SERIALOSC_PACKAGE_NAME"
 readonly WORK_DIR="$ROOT_DIR/build"
 readonly SOURCE_DIR="$WORK_DIR/serialosc-$SERIALOSC_SHORT_REVISION"
 readonly COMPILE_DIR="$WORK_DIR/compile-debian12-$SERIALOSC_SHORT_REVISION"
+readonly TEST_COMPILE_DIR="$WORK_DIR/test-debian12-$SERIALOSC_SHORT_REVISION"
 readonly TOOLS_DIR="$WORK_DIR/tools-debian12"
 readonly STAGE_DIR="$WORK_DIR/$PACKAGE_NAME"
 readonly DIST_DIR="$ROOT_DIR/dist"
@@ -176,6 +177,8 @@ build_image=$BUILD_IMAGE
 builder_os=$PRETTY_NAME
 cmake_version=$SERIALOSC_CMAKE_VERSION
 compiler=$(cc --version | sed -n '1p')
+test_build_type=Debug
+production_build_type=Release
 zeroconf=ON
 maximum_required_glibc=$SERIALOSC_MAXIMUM_GLIBC
 direct_runtime_libraries=libc.so.6,libm.so.6,libudev.so.1
@@ -253,15 +256,26 @@ build_inside_container() {
     export CFLAGS="-ffile-prefix-map=$ROOT_DIR=/usr/src/serialosc-steamos"
     export CXXFLAGS="$CFLAGS"
 
-    "$cmake_bin" --fresh -S "$SOURCE_DIR" -B "$COMPILE_DIR" \
-        -DCMAKE_BUILD_TYPE=Release \
-        -DBUILD_TESTING=ON
+    jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2')"
+    (
+        cd "$SOURCE_DIR"
+        "$cmake_bin" --fresh -S . -B "$TEST_COMPILE_DIR" \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=ON
+    )
+    "$cmake_bin" --build "$TEST_COMPILE_DIR" --clean-first --parallel "$jobs"
+    "$TOOLS_DIR/bin/ctest" --test-dir "$TEST_COMPILE_DIR" --output-on-failure
+
+    (
+        cd "$SOURCE_DIR"
+        "$cmake_bin" --fresh -S . -B "$COMPILE_DIR" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_TESTING=OFF
+    )
     grep -q '^build_with_zeroconf:BOOL=ON$' "$COMPILE_DIR/CMakeCache.txt" \
         || fail 'CMake did not enable Zeroconf'
 
-    jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2')"
     "$cmake_bin" --build "$COMPILE_DIR" --clean-first --parallel "$jobs"
-    "$TOOLS_DIR/bin/ctest" --test-dir "$COMPILE_DIR" --output-on-failure
 
     [[ "$("$COMPILE_DIR/bin/serialoscd" -v)" == "$SERIALOSC_EXPECTED_VERSION" ]] \
         || fail "serialoscd does not report $SERIALOSC_EXPECTED_VERSION"

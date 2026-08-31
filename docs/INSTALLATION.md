@@ -32,7 +32,7 @@ git switch codex/lease-candidate-packaging
 ./build.sh
 ```
 
-The build creates or reuses the dedicated rootless `serialosc-build` Debian 12 Distrobox. It installs build-only dependencies inside that container, checks out the exact fork and submodule revisions from `package.env`, runs the SerialOSC lease tests, enforces the glibc compatibility ceiling, and produces:
+The build creates or reuses the dedicated rootless `serialosc-build` Debian 12 Distrobox. It installs build-only dependencies inside that container, checks out the exact fork and submodule revisions from `package.env`, runs the SerialOSC lease tests in an assertion-enabled Debug build, creates the distributable binaries in a separate Release build, enforces the glibc compatibility ceiling, and produces:
 
 ```text
 dist/serialosc-steamos-v1.4.8-lease.7187832-x86_64.tar.gz

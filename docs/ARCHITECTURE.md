@@ -79,9 +79,13 @@ The lease candidate pins these submodule revisions:
 | libuv | `f87c8e4f70f234b952d9c47b15fb567f78e5f399` |
 | optparse | `a86877ed301d89a4eb64feb08f23af395aede2ed` |
 
-The CMake build runs the fork's lease state, runtime, OSC, and event-loop tests
-before packaging. It then inspects dynamic dependencies and rejects binaries
-whose required glibc exceeds 2.34.
+The CMake build first compiles and runs the fork's lease state, runtime, OSC,
+and event-loop tests as a Debug test build so their assertion-based checks
+remain active. It then configures a separate Release production build with
+tests excluded, inspects its dynamic dependencies, and rejects binaries whose
+required glibc exceeds 2.34. Both CMake configurations run from the pinned
+SerialOSC source directory so the embedded Git revision is the fork revision,
+not the surrounding packaging repository revision.
 
 Because upstream links liblo statically, every generated distributable includes the complete corresponding SerialOSC source tree with populated submodules, the exact build script, and license texts.
 
