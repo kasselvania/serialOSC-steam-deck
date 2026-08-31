@@ -47,7 +47,19 @@ bottom-right input, orderly release, automatic dark/free expiry after abrupt
 PlugData death, fresh fail-closed recovery, and active-lease hotplug with
 same-ID/same-port dark/free return before explicit reclaim. SerialOSC again
 retained `NRestarts=0`. This narrows the open matrix but does not promote the
-hashes: Arc, multiple devices, Bitwig, and the remaining SteamOS lifecycle
+hashes.
+
+The isolated classic four-ring Arc then passed as USB `0403:6001`, SerialOSC
+ID `m1001113`, padded model `monome arc`, valid Arc size `0 0`, on
+`/dev/ttyUSB0` and saved port `11564`. Its bounded evidence covered explicit
+takeover of independently unbound legacy port `12289`, corrected direct expiry
+and full-brightness renew/release, PlugData all-ring output and exact signed
+ring-`0`/ring-`3` delta input, orderly release, automatic dark/free expiry
+after abrupt PlugData death, fresh fail-closed recovery, and active-lease
+hotplug with same-ID/same-port dark/free return before explicit reclaim. A
+fresh ephemeral monitor recorded exactly one remove and one add. SerialOSC
+again retained `NRestarts=0`. This narrows the open matrix but does not promote
+the hashes: simultaneous devices, Bitwig, and the remaining SteamOS lifecycle
 rows are still required.
 
 ## Process model

@@ -6,7 +6,7 @@ Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) pack
 
 This development branch packages the opt-in leased-destination fork at exact revision `7187832c349202b1a94a9b10080ae57d40069946`. The lease protocol lets an aware client renew its ownership of a Grid or Arc callback. If the client or plug-in host dies, SerialOSC expires the lease, darkens that device, and frees its destination. Clients that never send `/sys/lease/*` retain the traditional SerialOSC behavior.
 
-The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed the legacy-128 and Zero/256 direct-protocol and complete single-device PlugData standalone slices, including hotplug and host death. It remains deliberately labeled `lease-candidate` until the Arc, simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
+The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed direct-protocol and complete single-device PlugData standalone slices for the legacy 128, Zero/256, and four-ring Arc, including hotplug and host death. It remains deliberately labeled `lease-candidate` until simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
 
 ## Script contract
 
@@ -106,6 +106,20 @@ abrupt host death, fresh fail-closed restart, and active-lease hotplug with
 same-ID/same-port dark/free recovery before explicit reclaim. A repeated
 fresh-callback trace recorded exactly one add and one remove. SerialOSC again
 remained active with zero restarts.
+
+The isolated classic four-ring Arc then passed as USB `0403:6001`, SerialOSC
+ID `m1001113`, padded model `monome arc`, valid Arc size `0 0`, on
+`/dev/ttyUSB0` and saved device port `11564`. An independently unbound legacy
+destination at port `12289` required explicit takeover. A corrected direct
+lease harness passed machine-observed expiry and a physically confirmed
+full-brightness 12-second renew/release run. PlugData then passed dark/free
+probe, explicit claim and renewal on callback `17782`, independent all-ring
+and marker output, exact positive ring-`0` and negative ring-`3` encoder
+deltas, orderly all-dark release, automatic dark/free expiry after abrupt
+host death, fresh fail-closed restart, and active-lease hotplug with
+same-ID/same-port dark/free recovery before explicit reclaim. A fresh
+ephemeral monitor recorded exactly one remove and one add; SerialOSC remained
+active with zero restarts.
 
 ## SteamOS safety boundary
 

@@ -63,6 +63,17 @@ dark/free expiry after abrupt PlugData death, fresh fail-closed restart, and
 active-lease unplug/reconnect with same-ID/same-port recovery before explicit
 reclaim. SerialOSC remained active with zero restarts.
 
+The isolated classic four-ring Arc then passed as USB `0403:6001`, SerialOSC
+ID `m1001113`, padded model `monome arc`, valid Arc size `0 0`, on saved port
+`11564`. Evidence covered explicit takeover of independently unbound legacy
+port `12289`, corrected direct expiry plus full-brightness renew/release,
+PlugData fail-closed probe, renewable claim on `17782`, all-ring and marker
+output, exact signed ring-`0`/ring-`3` delta input, orderly release, automatic
+dark/free expiry after abrupt PlugData death, fresh fail-closed restart, and
+active-lease unplug/reconnect with same-ID/same-port recovery before explicit
+reclaim. A fresh monitor recorded exactly one remove and one add; SerialOSC
+remained active with zero restarts.
+
 This is partial candidate evidence, not SteamOS release acceptance.
 
 ## Required SteamOS acceptance
@@ -71,7 +82,7 @@ This is partial candidate evidence, not SteamOS release acceptance.
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Verify Arc, two-device combinations, and all three devices.
+- Verify two-device combinations and all three devices.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
 - Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
 - Verify unplug/replug, dock behavior, and survivor isolation.

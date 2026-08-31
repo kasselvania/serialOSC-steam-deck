@@ -120,8 +120,23 @@ was still pending. Workbench commit `d893e8e` changed the monitor default to a
 fresh ephemeral callback port, and the repeated trace contained exactly one
 add and one remove.
 
-The Arc, multi-device, Bitwig, dock/lifecycle, and remaining matrix rows are
-still open. The package therefore remains a `lease-candidate`.
+The isolated classic four-ring Arc also passed as USB `0403:6001`, SerialOSC
+ID `m1001113`, padded model `monome arc`, valid Arc size `0 0`, on
+`/dev/ttyUSB0` and saved port `11564`. Independently unbound legacy port
+`12289` required explicit takeover. A workbench classifier initially rejected
+the valid zero-by-zero Arc surface before sending output; its short lease
+expired safely. Corrected commit `09c1224` passed 68 Python and 78 Lua tests
+before deployment. The corrected direct lane passed machine expiry and a
+visibly confirmed full-brightness renew/release run. PlugData then passed
+dark/free probe, renewable claim on `17782`, independent all-ring output,
+exact `arc_delta 0 1` and `arc_delta 3 -1` input, orderly release, automatic
+dark/free expiry after abrupt process death, fresh fail-closed recovery, and
+active-lease unplug/reconnect with same-ID/same-port dark/free return before
+explicit reclaim. A fresh monitor recorded exactly one remove and one add;
+SerialOSC stayed active with `NRestarts=0`.
+
+The multi-device, Bitwig, dock/lifecycle, and remaining matrix rows are still
+open. The package therefore remains a `lease-candidate`.
 
 ## Device matrix
 
