@@ -91,19 +91,20 @@ The candidate policy is a 6000 ms TTL renewed every 2000 ms. A successful renewa
 ### Current bounded candidate result
 
 On 2026-08-31, exact SerialOSC revision `7187832` and the pinned x86-64 binary
-hashes passed the legacy-128 direct protocol lane plus the PlugData standalone
-no-unplug/host-death slice. The attended evidence includes renewal beyond the
-first TTL, full 16-by-8 output, exact `a_key 0 0 1` and `a_key 0 0 0` input,
+hashes passed the legacy-128 direct protocol lane plus the complete
+single-device PlugData standalone slice. The attended evidence includes
+renewal beyond the first TTL, full 16-by-8 output, exact `a_key 0 0 1` and
+`a_key 0 0 0` input,
 orderly all-dark release to free port `0`, automatic all-dark expiry after the
 test-owned PlugData process received `SIGKILL`, and a fresh PlugData process
-that started fail-closed before explicit reselection and reclaim. SteamOS
-read-only mode remained enabled and SerialOSC stayed active with
-`NRestarts=0`.
+that started fail-closed before explicit reselection and reclaim. Active-lease
+unplug then removed only the legacy worker; reconnect restored the same stable
+ID and device port as dark/free, ignored output before explicit reselection,
+and reclaimed cleanly. SteamOS read-only mode remained enabled and SerialOSC
+stayed active with `NRestarts=0`.
 
-This does not complete the standalone lane defined above because its
-lease-aware hot-unplug/reconnect sub-lane is still open. The Zero, Arc,
-multi-device, Bitwig, dock/lifecycle, and remaining matrix rows are also open.
-The package therefore remains a `lease-candidate`.
+The Zero, Arc, multi-device, Bitwig, dock/lifecycle, and remaining matrix rows
+are still open. The package therefore remains a `lease-candidate`.
 
 ## Device matrix
 

@@ -6,7 +6,7 @@ Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) pack
 
 This development branch packages the opt-in leased-destination fork at exact revision `7187832c349202b1a94a9b10080ae57d40069946`. The lease protocol lets an aware client renew its ownership of a Grid or Arc callback. If the client or plug-in host dies, SerialOSC expires the lease, darkens that device, and frees its destination. Clients that never send `/sys/lease/*` retain the traditional SerialOSC behavior.
 
-The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed its legacy-128 direct-protocol and PlugData standalone no-unplug/host-death slices. It remains deliberately labeled `lease-candidate` until legacy hotplug, the other devices, simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
+The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed its legacy-128 direct-protocol and complete single-device PlugData standalone slice, including hotplug and host death. It remains deliberately labeled `lease-candidate` until the other devices, simultaneous operation, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
 
 ## Script contract
 
@@ -90,10 +90,11 @@ On 2026-08-31, the pinned x86-64 candidate bytes passed the first bounded Deck
 lease slices with legacy Grid `m1000853`: direct expiry and renew/release,
 PlugData fail-closed startup, explicit claim and renewal, full-surface output,
 exact top-left input, orderly dark release, automatic dark/free recovery after
-abrupt PlugData death, and fresh fail-closed restart plus explicit reclaim.
-SteamOS remained read-only and `serialoscd.service` did not restart. This is
-partial candidate evidence, not release acceptance; the untested rows above
-remain required.
+abrupt PlugData death, fresh fail-closed restart plus explicit reclaim, and
+active-lease unplug/reconnect with same-ID/same-port return as dark/free before
+explicit reselection and reclaim. SteamOS remained read-only and
+`serialoscd.service` did not restart. This is partial candidate evidence, not
+release acceptance; the untested rows above remain required.
 
 ## SteamOS safety boundary
 

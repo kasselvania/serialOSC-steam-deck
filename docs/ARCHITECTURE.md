@@ -34,11 +34,12 @@ bytes complete the SteamOS matrix.
 On 2026-08-31, those exact hashes passed their first bounded physical Deck
 slices with legacy Grid `m1000853`: direct lease expiry and renew/release plus
 PlugData standalone renewal, input/output, orderly release, automatic expiry
-after abrupt PlugData death, and fresh fail-closed recovery. SteamOS remained
-read-only and the user SerialOSC service retained `NRestarts=0`. This narrows
-the open matrix but does not promote the hashes: legacy hotplug, Zero, Arc,
-multiple devices, Bitwig, and the remaining SteamOS lifecycle rows are still
-required.
+after abrupt PlugData death, fresh fail-closed recovery, and active-lease
+unplug/reconnect with same-ID/same-port return as dark/free before explicit
+reclaim. SteamOS remained read-only and the user SerialOSC service retained
+`NRestarts=0`. This narrows the open matrix but does not promote the hashes:
+Zero, Arc, multiple devices, Bitwig, and the remaining SteamOS lifecycle rows
+are still required.
 
 ## Process model
 

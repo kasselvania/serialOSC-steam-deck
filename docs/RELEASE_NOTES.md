@@ -50,8 +50,9 @@ the separately built pinned x86-64 bytes passed their first bounded Deck slices
 with legacy Grid `m1000853`: direct protocol expiry and renew/release, followed
 by PlugData standalone fail-closed startup, renewal, exact input/output,
 orderly dark release, automatic dark/free expiry after abrupt PlugData death,
-and fresh fail-closed restart plus explicit reclaim. SteamOS remained read-only
-and SerialOSC did not restart.
+fresh fail-closed restart plus explicit reclaim, and active-lease
+unplug/reconnect with same-ID/same-port return as dark/free before explicit
+reclaim. SteamOS remained read-only and SerialOSC did not restart.
 
 This is partial candidate evidence, not SteamOS release acceptance.
 
@@ -61,7 +62,6 @@ This is partial candidate evidence, not SteamOS release acceptance.
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Complete lease-aware legacy-128 hot-unplug/reconnect/reclaim.
 - Verify Zero/256, Arc, two-device combinations, and all three devices.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
 - Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
