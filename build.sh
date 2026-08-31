@@ -57,8 +57,8 @@ $SERIALOSC_LIBUV_REVISION third-party/libuv
 $SERIALOSC_OPTPARSE_REVISION third-party/optparse
 EOF
 
-    if [[ -n "$(git -C "$SOURCE_DIR" status --porcelain --untracked-files=no)" ]]; then
-        fail "the pinned SerialOSC checkout has tracked modifications"
+    if [[ -n "$(git -C "$SOURCE_DIR" status --porcelain)" ]]; then
+        fail 'the pinned SerialOSC checkout is not clean'
     fi
 }
 
@@ -84,6 +84,28 @@ check_binary() {
         || fail "could not determine glibc requirement for $binary"
     if dpkg --compare-versions "$max_glibc" gt "$SERIALOSC_MAXIMUM_GLIBC"; then
         fail "$binary requires glibc $max_glibc; package ceiling is $SERIALOSC_MAXIMUM_GLIBC"
+    fi
+}
+
+require_expected_sha256() {
+    local path="$1"
+    local expected="$2"
+    local actual
+
+    actual="$(sha256sum "$path" | awk '{print $1}')"
+    [[ "$actual" == "$expected" ]] \
+        || fail "$path has SHA-256 $actual, expected pinned candidate byte $expected"
+}
+
+packaging_revision() {
+    git -C "$ROOT_DIR" rev-parse HEAD
+}
+
+verify_packaging_checkout() {
+    [[ -d "$ROOT_DIR/.git" ]] \
+        || fail 'source builds require a Git checkout of the packaging repository'
+    if [[ -n "$(git -C "$ROOT_DIR" status --porcelain)" ]]; then
+        fail 'packaging checkout is not clean; commit or remove changes before building'
     fi
 }
 
@@ -119,6 +141,12 @@ stage_package() {
         "$STAGE_DIR/bin/serialoscd" \
         "$STAGE_DIR/bin/serialosc-detector" \
         "$STAGE_DIR/bin/serialosc-device"
+    require_expected_sha256 \
+        "$STAGE_DIR/bin/serialoscd" "$SERIALOSC_EXPECTED_SERIALOSCD_SHA256"
+    require_expected_sha256 \
+        "$STAGE_DIR/bin/serialosc-detector" "$SERIALOSC_EXPECTED_DETECTOR_SHA256"
+    require_expected_sha256 \
+        "$STAGE_DIR/bin/serialosc-device" "$SERIALOSC_EXPECTED_DEVICE_SHA256"
 
     (
         cd "$STAGE_DIR/bin"
@@ -166,6 +194,8 @@ stage_package() {
     cat >"$STAGE_DIR/BUILD-RECEIPT.txt" <<EOF
 package=$PACKAGE_NAME
 channel=$SERIALOSC_PACKAGE_CHANNEL
+packaging_repository=https://github.com/kasselvania/serialOSC-steam-deck.git
+packaging_revision=$(packaging_revision)
 serialosc_repository=$SERIALOSC_REPOSITORY
 serialosc_version=$SERIALOSC_VERSION
 serialosc_revision=$SERIALOSC_REVISION
@@ -287,6 +317,7 @@ build_inside_container() {
 }
 
 run_host_build() {
+    verify_packaging_checkout
     require_command distrobox
     require_command awk
 

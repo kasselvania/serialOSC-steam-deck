@@ -95,6 +95,8 @@ verify_payload() {
         || fail 'build receipt package does not match the installer'
     grep -Fqx "channel=$SERIALOSC_PACKAGE_CHANNEL" "$payload_root/BUILD-RECEIPT.txt" \
         || fail 'build receipt channel does not match the installer'
+    grep -Eq '^packaging_revision=[0-9a-f]{40}$' "$payload_root/BUILD-RECEIPT.txt" \
+        || fail 'build receipt has no exact packaging revision'
     grep -Fqx "serialosc_revision=$SERIALOSC_REVISION" "$payload_root/BUILD-RECEIPT.txt" \
         || fail 'build receipt revision does not match the installer'
 

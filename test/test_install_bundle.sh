@@ -48,6 +48,8 @@ done
 cat >"$bundle/BUILD-RECEIPT.txt" <<EOF
 package=$SERIALOSC_PACKAGE_NAME
 channel=$SERIALOSC_PACKAGE_CHANNEL
+packaging_repository=https://github.com/kasselvania/serialOSC-steam-deck.git
+packaging_revision=0000000000000000000000000000000000000000
 serialosc_repository=$SERIALOSC_REPOSITORY
 serialosc_version=$SERIALOSC_VERSION
 serialosc_revision=$SERIALOSC_REVISION
@@ -204,6 +206,8 @@ HOME="$fake_home" PATH="$fake_path:$PATH" \
     "$fake_home/.local/bin/serialosc-doctor" \
     >"$temporary_dir/doctor.out"
 grep -F "build receipt: $SERIALOSC_PACKAGE_NAME at $SERIALOSC_REVISION" \
+    "$temporary_dir/doctor.out" >/dev/null
+grep -F 'packaging revision: 0000000000000000000000000000000000000000' \
     "$temporary_dir/doctor.out" >/dev/null
 grep -F 'lease candidate is installed' "$temporary_dir/doctor.out" >/dev/null
 

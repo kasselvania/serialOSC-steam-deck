@@ -3,7 +3,7 @@
 Start with:
 
 ```bash
-serialosc-doctor
+~/.local/bin/serialosc-doctor
 ```
 
 The doctor distinguishes hard failures from warnings and does not change the machine.
@@ -95,7 +95,7 @@ ls -l /dev/serial/by-id/
 Then rerun:
 
 ```bash
-serialosc-doctor
+~/.local/bin/serialosc-doctor
 ```
 
 An audio cue or cable insertion alone does not prove that USB enumeration completed. During validation, one dock port produced USB descriptor errors `-32` and `-71`; moving the cable to another dock port allowed normal enumeration. If no `usb-monome_*` identity appears, try another physical port or a direct connection before changing SerialOSC.
@@ -121,7 +121,7 @@ A dock can remove and re-enumerate an entire USB branch when a second device is 
 Run:
 
 ```bash
-serialosc-doctor
+~/.local/bin/serialosc-doctor
 systemctl --user status serialoscd.service --no-pager
 journalctl --user -b -u serialoscd.service --no-pager
 steamos-readonly status

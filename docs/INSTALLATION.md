@@ -117,7 +117,7 @@ The full click-install log is retained at:
 Run this on the SteamOS host, not inside a Distrobox container:
 
 ```bash
-serialosc-doctor
+~/.local/bin/serialosc-doctor
 ```
 
 The doctor verifies the installed binaries against their build receipt, compares the active user service to the packaged unit, reports the exact source revision and package channel, and checks UDP/12002. A `lease-candidate` warning is expected until the exact SteamOS build completes acceptance.
@@ -152,13 +152,13 @@ These commands do not delete the old unit files. The installer itself never writ
 ## Remove
 
 ```bash
-serialosc-uninstall
+~/.local/bin/serialosc-uninstall
 ```
 
 Device preferences under `~/.config/serialosc` are preserved by default. Remove them only when intentional:
 
 ```bash
-serialosc-uninstall --purge-config
+~/.local/bin/serialosc-uninstall --purge-config
 ```
 
 Hardware evidence, installer logs, and rollback snapshots remain under the user state directory so removal does not erase diagnostic or recovery evidence.

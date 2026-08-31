@@ -78,7 +78,7 @@ Everything installed by the normal path is owned by the current user:
 | Uninstaller | `~/.local/bin/serialosc-uninstall` |
 | Installer logs and rollback snapshots | `~/.local/state/serialosc-steamos/` |
 
-Run `serialosc-doctor` after installation. A candidate install is reported honestly as a candidate; that warning remains until the exact SteamOS bytes complete physical acceptance.
+Run `~/.local/bin/serialosc-doctor` after installation. The explicit path works in Desktop Mode and over SSH even when `~/.local/bin` is not part of the shell's `PATH`. A candidate install is reported honestly as a candidate; that warning remains until the exact SteamOS bytes complete physical acceptance.
 
 ## Existing hardware evidence
 

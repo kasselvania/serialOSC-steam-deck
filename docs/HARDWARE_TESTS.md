@@ -4,7 +4,7 @@ This protocol validates the installed, rootless SerialOSC service without changi
 
 The current target is the `lease-candidate` build at SerialOSC revision `7187832`. The older 1.4.7 package remains the accepted rollback baseline. Evidence from that older build is useful regression context but is not acceptance of the candidate's x86-64 bytes.
 
-The workbench records machine evidence automatically. Physical facts such as LEDs, key presses, encoder motion, cable removal, dock use, and audio cues still require a human observation; record them with `serialosc-hardware-test note`.
+The workbench records machine evidence automatically. Physical facts such as LEDs, key presses, encoder motion, cable removal, dock use, and audio cues still require a human observation; record them with `~/.local/bin/serialosc-hardware-test note`. The explicit path also works in SSH shells where `~/.local/bin` is not on `PATH`.
 
 ## What the resources actually are
 
@@ -24,7 +24,7 @@ The per-device UDP port has a different contract. If its saved port is already b
 Start with every Monome device unplugged:
 
 ```bash
-serialosc-hardware-test begin post-update-matrix
+~/.local/bin/serialosc-hardware-test begin post-update-matrix
 ```
 
 `begin` fails closed unless all of these are true:
@@ -49,13 +49,13 @@ Each snapshot includes OS and boot identity, installed hashes, service state, pr
 Useful commands during a session are:
 
 ```bash
-serialosc-hardware-test status
-serialosc-hardware-test snapshot LABEL
-serialosc-hardware-test note TEXT...
-serialosc-hardware-test discover
-serialosc-hardware-test info DEVICE_UDP_PORT
-serialosc-hardware-test session
-serialosc-hardware-test finish
+~/.local/bin/serialosc-hardware-test status
+~/.local/bin/serialosc-hardware-test snapshot LABEL
+~/.local/bin/serialosc-hardware-test note TEXT...
+~/.local/bin/serialosc-hardware-test discover
+~/.local/bin/serialosc-hardware-test info DEVICE_UDP_PORT
+~/.local/bin/serialosc-hardware-test session
+~/.local/bin/serialosc-hardware-test finish
 ```
 
 The interactive OSC session discovers all SerialOSC-managed devices, saves each device's original callback and prefix, gives it a session-specific prefix, and prints key/encoder events. This is the traditional-client compatibility lane: it deliberately uses existing `/sys/*` messages, not leases. Its commands are:
@@ -119,7 +119,7 @@ Perform this only after one device has completed its normal single-device row. L
 With the device connected:
 
 ```bash
-serialosc-hardware-test port-status P
+~/.local/bin/serialosc-hardware-test port-status P
 ```
 
 Expected: `in-use`. Unplug the device, wait for removal, snapshot, and repeat. Expected: `free`.
@@ -127,7 +127,7 @@ Expected: `in-use`. Unplug the device, wait for removal, snapshot, and repeat. E
 In a second host terminal, deliberately occupy the saved port:
 
 ```bash
-serialosc-hardware-test hold-port P
+~/.local/bin/serialosc-hardware-test hold-port P
 ```
 
 While the holder is running, replug that one device and capture a snapshot. Expected source-derived behavior is:
@@ -144,7 +144,7 @@ Unplug the device, press Ctrl-C in the holder terminal, and verify `port-status 
 After the normal functional test, resolve the exact stable path from the snapshot, for example `/dev/serial/by-id/...`. With the worker active, run:
 
 ```bash
-serialosc-hardware-test tty-open /dev/serial/by-id/EXACT_DEVICE
+~/.local/bin/serialosc-hardware-test tty-open /dev/serial/by-id/EXACT_DEVICE
 ```
 
 The command opens and immediately closes the tty without I/O or settings changes. Record whether it succeeds or fails. Success matches the current source's non-exclusive open behavior; failure requires inspecting ACL, driver, and owner evidence before drawing a conclusion. This command does not prove concurrent protocol use is safe.
@@ -161,7 +161,7 @@ These are separate lifecycle cases, not substitutes for the device matrix:
 Finish only after the intended cases are complete:
 
 ```bash
-serialosc-hardware-test finish
+~/.local/bin/serialosc-hardware-test finish
 ```
 
 Finishing retains all evidence and removes only the active-session pointer.

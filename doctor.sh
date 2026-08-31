@@ -94,8 +94,11 @@ if [[ -r "$BUILD_RECEIPT" ]]; then
     package="$(receipt_value package || true)"
     channel="$(receipt_value channel || true)"
     revision="$(receipt_value serialosc_revision || true)"
-    if [[ -n "$package" && -n "$channel" && -n "$revision" ]]; then
+    packaging_revision="$(receipt_value packaging_revision || true)"
+    if [[ -n "$package" && -n "$channel" && -n "$revision" \
+        && "$packaging_revision" =~ ^[0-9a-f]{40}$ ]]; then
         pass "build receipt: $package at $revision"
+        pass "packaging revision: $packaging_revision"
         if [[ "$channel" == 'lease-candidate' ]]; then
             warn 'lease candidate is installed; SteamOS physical acceptance is not yet a release claim'
         else

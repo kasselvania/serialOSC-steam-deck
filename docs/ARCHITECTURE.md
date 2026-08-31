@@ -19,6 +19,18 @@ The build verifies the root revision and every Git submodule before compiling.
 The archive then carries the complete source tree, a build receipt, executable
 checksums, and a manifest covering every packaged file.
 
+The first Debian 12 x86-64 candidate build established these pinned bytes:
+
+```text
+cb43323035fbf7098fa3caa8a0f46ab191dac3925586478e653b7a63b40d969a  serialoscd
+5d7e47954bc1a40c06350f14c07b9d96a9b7b96357e24b9e15ba4c48c6541db3  serialosc-detector
+59ec189e4ed2573ffa7c44d7b06538a2a1bab87e61db0d7b5bda487a86e124b1  serialosc-device
+```
+
+The build now rejects byte drift under this package identity. These are pinned
+candidate hashes; they become hardware-accepted hashes only after the exact
+bytes complete the SteamOS matrix.
+
 ## Process model
 
 SerialOSC is one supervisor, not one service per serial port:
@@ -86,6 +98,11 @@ tests excluded, inspects its dynamic dependencies, and rejects binaries whose
 required glibc exceeds 2.34. Both CMake configurations run from the pinned
 SerialOSC source directory so the embedded Git revision is the fork revision,
 not the surrounding packaging repository revision.
+
+A source build also requires the packaging checkout itself to have no tracked
+modifications. Its exact commit is written into `BUILD-RECEIPT.txt`, preventing
+an uncommitted installer or documentation state from being mistaken for a
+reproducible package.
 
 Because upstream links liblo statically, every generated distributable includes the complete corresponding SerialOSC source tree with populated submodules, the exact build script, and license texts.
 
