@@ -59,8 +59,18 @@ after abrupt PlugData death, fresh fail-closed recovery, and active-lease
 hotplug with same-ID/same-port dark/free return before explicit reclaim. A
 fresh ephemeral monitor recorded exactly one remove and one add. SerialOSC
 again retained `NRestarts=0`. This narrows the open matrix but does not promote
-the hashes: simultaneous devices, Bitwig, and the remaining SteamOS lifecycle
-rows are still required.
+the hashes.
+
+The legacy-128 plus Zero/256 pair then passed the first simultaneous lane.
+Their renewable callbacks, distinguishable output, and exact A/B key input
+remained isolated. Active removal and same-ID/same-port dark/free recovery
+passed in both directions, including fresh survivor input and blocked output
+before explicit reclaim. Each slot released independently. Abrupt death of the
+shared PlugData process expired and visibly darkened both leases; a fresh host
+started fail-closed, explicitly recovered both, and released both to free port
+`0`. SteamOS remained read-only and SerialOSC retained `NRestarts=0`. This
+narrows the open matrix but does not promote the hashes: the Arc pairs,
+three-device, Bitwig, and remaining SteamOS lifecycle rows are still required.
 
 ## Process model
 

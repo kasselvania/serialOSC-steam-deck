@@ -121,6 +121,18 @@ same-ID/same-port dark/free recovery before explicit reclaim. A fresh
 ephemeral monitor recorded exactly one remove and one add; SerialOSC remained
 active with zero restarts.
 
+The legacy-128 plus Zero/256 pair then passed the first candidate
+simultaneous-device lane. Their leases renewed independently on callbacks
+`17780` and `17781`; distinct surface patterns and exact A/B key events stayed
+isolated. Active unplug/reconnect in both directions preserved the survivor's
+lease, output, and fresh key input while the returning device stayed dark/free
+until explicit reselection and reclaim. Each slot released without disturbing
+the other. Killing the shared PlugData process left both leases briefly
+active, then SerialOSC expired both, visibly darkened both Grids, and returned
+both to free port `0`. A fresh host started fail-closed, recovered only after
+explicit selection/probe/claim, and completed final all-dark release. SteamOS
+remained read-only and SerialOSC retained zero restarts.
+
 ## SteamOS safety boundary
 
 This project does not:

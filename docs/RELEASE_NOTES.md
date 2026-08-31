@@ -74,6 +74,15 @@ active-lease unplug/reconnect with same-ID/same-port recovery before explicit
 reclaim. A fresh monitor recorded exactly one remove and one add; SerialOSC
 remained active with zero restarts.
 
+The legacy-128 plus Zero/256 pair then passed the first candidate
+simultaneous-device row. Separate `17780` and `17781` leases, distinguishable
+output, and exact A/B key input stayed isolated. Hotplug in both directions
+preserved the survivor and returned the reconnected device dark/free before
+explicit reclaim. Each device released independently. Shared PlugData host
+death expired and visibly darkened both leases; a fresh host started
+fail-closed, explicitly recovered both, and released both to free port `0`.
+SteamOS remained read-only and SerialOSC retained zero restarts.
+
 This is partial candidate evidence, not SteamOS release acceptance.
 
 ## Required SteamOS acceptance
@@ -82,7 +91,7 @@ This is partial candidate evidence, not SteamOS release acceptance.
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Verify two-device combinations and all three devices.
+- Verify the remaining Arc two-device combinations and all three devices.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
 - Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
 - Verify unplug/replug, dock behavior, and survivor isolation.

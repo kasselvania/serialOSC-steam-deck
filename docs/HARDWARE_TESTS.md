@@ -135,8 +135,21 @@ active-lease unplug/reconnect with same-ID/same-port dark/free return before
 explicit reclaim. A fresh monitor recorded exactly one remove and one add;
 SerialOSC stayed active with `NRestarts=0`.
 
-The multi-device, Bitwig, dock/lifecycle, and remaining matrix rows are still
-open. The package therefore remains a `lease-candidate`.
+The legacy-128 plus Zero/256 pair then passed the first simultaneous-device
+row. Legacy held callback `17780`; Zero held `17781`. Distinct output and exact
+`a_key 0 0 1/0` plus `b_key 15 15 1/0` input stayed isolated. Active unplug in
+both directions produced one remove, freed only the removed device port, and
+preserved the survivor's pattern, lease, and a fresh key event. Each reconnect
+returned with the same ID and port as dark/free, blocked output before
+reselection, and reclaimed explicitly. Each slot released without disturbing
+the other. Shared PlugData PID `216694` then died abruptly; both leases stayed
+present briefly, expired independently, visibly darkened both Grids, and
+returned both to free port `0`. Fresh PID `221424` started fail-closed,
+explicitly recovered both, and released both dark/free. SteamOS remained
+read-only and SerialOSC stayed active with `NRestarts=0`.
+
+The Arc pair, three-device, Bitwig, dock/lifecycle, and remaining matrix rows
+are still open. The package therefore remains a `lease-candidate`.
 
 ## Device matrix
 
