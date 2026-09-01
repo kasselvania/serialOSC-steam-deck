@@ -163,9 +163,28 @@ survivor continued. Each fresh process started fail-closed and recovered only
 after explicit action. Final release left both dark/free. SteamOS remained
 read-only and SerialOSC stayed active with `NRestarts=0`.
 
-Zero-plus-Arc, all-three shared-host, Bitwig, dock/lifecycle, and remaining
-matrix rows are still open. The package therefore remains a
-`lease-candidate`.
+The Zero/256 plus four-ring Arc pair then completed bounded M3 functional
+acceptance. Zero held callback `17780`; Arc held `17782`. Distinct output,
+exact `a_key 15 15 1/0`, and signed `arc_delta 1 1` input stayed isolated.
+Active Zero unplug freed only port `19536`; Arc retained its lease, pattern,
+and fresh `arc_delta 2 -1` input. Active Arc unplug freed only port `11564`;
+Zero retained its lease, pattern, and exact `a_key 0 15 1/0` input. Arc
+reconnect preserved Zero and returned dark/free before explicit reclaim.
+Independent release and reciprocal separate-process expiry/recovery passed.
+
+Zero reconnect exposed a documented dock/power boundary. Boot-inserting Zero
+physically removed and re-added Arc before Zero enumerated in both tested dock
+port orientations. Kernel evidence contained the Arc USB disconnect and no
+over-current warning. Both devices returned under the same stable IDs and
+saved ports as dark/free; preselection output was blocked, explicit recovery
+restored both patterns, and SerialOSC did not restart. This is successful
+fail-closed recovery, not uninterrupted Arc-survivor continuity. Use the
+supported setup order on this dock: connect Zero first, then Arc. Final release
+left both dark/free while SteamOS remained read-only and SerialOSC stayed
+active with `NRestarts=0`.
+
+All-three shared-host, Bitwig, dock/lifecycle, and remaining matrix rows are
+still open. The package therefore remains a `lease-candidate`.
 
 ## Device matrix
 
@@ -178,7 +197,7 @@ Run the single-device rows before combinations. Do not infer support for a later
 | S3 | Arc only | Stable serial identity; one worker and device port; independent ring command; encoder delta; encoder key events only when the hardware has switches; clean removal and replug |
 | M1 | Legacy 128 + Zero | Unique identities and ports; independent lights/events; removing either leaves the other functional |
 | M2 | Legacy 128 + Arc | Unique identities and ports; grid and ring outputs remain isolated; removing either leaves the other functional |
-| M3 | Zero + Arc | Unique identities and ports if both are SerialOSC-managed; independent events/removal |
+| M3 | Zero + Arc | Unique identities and ports if both are SerialOSC-managed; independent events/removal; record any dock reset during Zero boot insertion rather than claiming uninterrupted survivor continuity |
 | M4 | Legacy 128 + Zero + Arc | Three identities and ports if all are managed; independent output/input; each of three removal orders affects only the removed device |
 
 The Zero's path is intentionally empirical. “Pico-based” and “OSC mode” do not by themselves prove that it should appear as a SerialOSC serial device. The baseline snapshot captures both USB/udev and Zeroconf evidence so its real boundary can be classified before changing software.

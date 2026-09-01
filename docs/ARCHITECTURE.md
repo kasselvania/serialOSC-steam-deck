@@ -81,9 +81,24 @@ separate PlugData processes; killing each process in turn expired and darkened
 only its device while the survivor continued, and each fresh replacement
 started fail-closed before explicit recovery. This proves reciprocal process
 isolation, not shared-host death. Final readback found both devices dark/free.
-SteamOS remained read-only and SerialOSC retained `NRestarts=0`. The pinned
-hashes remain candidates: Zero-plus-Arc, all-three shared-host, Bitwig, and the
-remaining SteamOS lifecycle rows are still required.
+SteamOS remained read-only and SerialOSC retained `NRestarts=0`. This narrowed
+the matrix but did not promote the pinned hashes.
+
+The Zero/256 plus four-ring Arc pair then completed bounded M3 functional
+acceptance. Renewable callbacks `17780` and `17782`, distinguishable output,
+exact Zero key input, and signed Arc delta input remained isolated. Zero
+removal preserved Arc; Arc removal/reconnect preserved Zero. Independent
+release and reciprocal separate-process expiry/recovery passed, with fresh
+workbenches starting fail-closed. Zero boot insertion was a hardware boundary:
+it physically removed and re-added Arc before Zero enumerated in both tested
+dock-port orientations. The kernel recorded the Arc USB disconnect and no
+over-current warning. SerialOSC correctly returned both devices under their
+stable IDs and saved ports as dark/free, blocked output before explicit
+reclaim, and recovered without restarting. This accepts fail-closed recovery,
+not uninterrupted Arc-survivor continuity. The supported order on this dock is
+Zero first, then Arc. The pinned hashes remain candidates: all-three
+shared-host, Bitwig, and the remaining SteamOS lifecycle rows are still
+required.
 
 ## Process model
 

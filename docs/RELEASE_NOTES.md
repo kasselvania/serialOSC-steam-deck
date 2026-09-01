@@ -94,6 +94,20 @@ death: only the dead process's device expired and darkened, and each fresh
 process started fail-closed. Final release returned both devices to free port
 `0`. SteamOS remained read-only and SerialOSC retained zero restarts.
 
+The Zero/256 plus four-ring Arc pair then completed bounded M3 functional
+acceptance. Separate `17780` and `17782` leases, distinguishable output, exact
+Zero key input, and signed Arc delta input stayed isolated. Zero removal
+preserved Arc; Arc removal/reconnect preserved Zero. Independent release and
+reciprocal separate-process expiry/recovery passed. Zero boot insertion,
+however, physically reset and re-enumerated Arc through the dock in both tested
+port orientations. Both devices returned under their stable IDs and saved
+ports as dark/free, rejected preselection output, and recovered only after
+explicit action. The kernel recorded the Arc USB disconnect and no
+over-current warning. This accepts fail-closed recovery, not uninterrupted Arc
+continuity during Zero insertion. Connect Zero first and Arc afterward on this
+dock. Final release left both dark/free; SteamOS remained read-only and
+SerialOSC retained zero restarts.
+
 This is partial candidate evidence, not SteamOS release acceptance.
 
 ## Required SteamOS acceptance
@@ -102,7 +116,8 @@ This is partial candidate evidence, not SteamOS release acceptance.
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Verify Zero-plus-Arc and all three devices.
+- Verify all three devices, using the documented Zero-first connection order
+  and preserving the Zero-boot dock-reset boundary in the result.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
 - Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
 - Verify unplug/replug, dock behavior, and survivor isolation.

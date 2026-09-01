@@ -6,7 +6,7 @@ Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) pack
 
 This development branch packages the opt-in leased-destination fork at exact revision `7187832c349202b1a94a9b10080ae57d40069946`. The lease protocol lets an aware client renew its ownership of a Grid or Arc callback. If the client or plug-in host dies, SerialOSC expires the lease, darkens that device, and frees its destination. Clients that never send `/sys/lease/*` retain the traditional SerialOSC behavior.
 
-The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed direct-protocol and complete single-device PlugData standalone slices for the legacy 128, Zero/256, and four-ring Arc, including hotplug and host death, plus the legacy-plus-Zero and legacy-plus-Arc simultaneous lanes. It remains deliberately labeled `lease-candidate` until Zero-plus-Arc, all-three shared-host, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
+The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed direct-protocol and complete single-device PlugData standalone slices for the legacy 128, Zero/256, and four-ring Arc, including hotplug and host death, plus all three bounded pair lanes. Zero-plus-Arc has a documented dock/power boundary: boot-inserting Zero physically resets Arc, after which both devices recover dark/free and require explicit reclaim; uninterrupted Arc continuity is not claimed. The candidate remains deliberately labeled `lease-candidate` until all-three shared-host, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
 
 ## Script contract
 
@@ -147,6 +147,22 @@ operator action. This is reciprocal process-isolation evidence, not the
 still-required all-device shared-host-death row. Final release left both
 devices visibly dark and independently free at port `0`; SteamOS remained
 read-only and SerialOSC retained zero restarts.
+
+The Zero/256 plus four-ring Arc pair then completed the M3 functional lane.
+Renewable callbacks `17780` and `17782`, distinct Grid/ring output, exact Zero
+key input, and signed Arc delta input stayed isolated. Zero removal left Arc
+leased, patterned, and responsive. Arc removal/reconnect left Zero unchanged;
+Arc returned under the same ID and saved port as dark/free before explicit
+reclaim. Independent releases and reciprocal separate-process expiry/recovery
+passed. Boot-inserting Zero, however, physically removed and re-added Arc
+before Zero enumerated in both tested dock-port orientations. SerialOSC handled
+that physical loss fail-closed: both stable IDs returned on their saved ports
+dark/free, preselection output was blocked, and explicit recovery restored
+both. The kernel recorded the Arc USB disconnect and no over-current warning.
+This accepts M3 routing and bounded recovery, not uninterrupted Arc continuity
+during Zero boot insertion. On this dock, connect Zero first and Arc afterward.
+Final release left both devices dark/free; SteamOS remained read-only and
+SerialOSC retained zero restarts.
 
 ## SteamOS safety boundary
 
