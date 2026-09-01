@@ -95,10 +95,23 @@ dock-port orientations. The kernel recorded the Arc USB disconnect and no
 over-current warning. SerialOSC correctly returned both devices under their
 stable IDs and saved ports as dark/free, blocked output before explicit
 reclaim, and recovered without restarting. This accepts fail-closed recovery,
-not uninterrupted Arc-survivor continuity. The supported order on this dock is
-Zero first, then Arc. The pinned hashes remain candidates: all-three
-shared-host, Bitwig, and the remaining SteamOS lifecycle rows are still
-required.
+not uninterrupted Arc-survivor continuity in that M3 run. A later M4 Zero
+reconnect on the same dock was clean, so the reset is intermittent; Zero-first
+is conservative setup guidance rather than a required invariant.
+
+The all-three M4 lane then passed with one PlugData PID owning both live
+patches and all Grid/Arc discovery, callback, and control ports. Three
+renewable callbacks `17780`, `17781`, and `17782`, distinct output, and exact
+legacy/Zero/Arc input remained isolated. Active removal and same-ID/same-port
+dark/free recovery passed for legacy, Arc, and Zero, including fresh input from
+both survivors and blocked output before explicit reclaim. The Zero reconnect
+produced only a Zero add and preserved legacy plus Arc uninterrupted. Each
+session released independently. Abrupt death of the one shared host expired
+and visibly darkened all three leases; a fresh shared host started fail-closed,
+explicitly recovered every pattern and input, and completed final all-dark/free
+release. SteamOS remained read-only and SerialOSC retained `NRestarts=0`. The
+pinned hashes remain candidates: Deck Bitwig and the remaining SteamOS
+lifecycle rows are still required.
 
 ## Process model
 

@@ -179,12 +179,27 @@ over-current warning. Both devices returned under the same stable IDs and
 saved ports as dark/free; preselection output was blocked, explicit recovery
 restored both patterns, and SerialOSC did not restart. This is successful
 fail-closed recovery, not uninterrupted Arc-survivor continuity. Use the
-supported setup order on this dock: connect Zero first, then Arc. Final release
-left both dark/free while SteamOS remained read-only and SerialOSC stayed
-active with `NRestarts=0`.
+conservative setup order on this dock: connect Zero first, then Arc. A later M4
+Zero reconnect was clean, so the earlier reset is intermittent. Final M3
+release left both dark/free while SteamOS remained read-only and SerialOSC
+stayed active with `NRestarts=0`.
 
-All-three shared-host, Bitwig, dock/lifecycle, and remaining matrix rows are
-still open. The package therefore remains a `lease-candidate`.
+The all-three M4 lane then passed with one PlugData PID. Legacy, Zero, and Arc
+held callbacks `17780`, `17781`, and `17782`; distinguishable output and exact
+`a_key`, `b_key`, and `arc_delta` input stayed isolated. Each active unplug
+freed only the removed device port while both survivors retained leases,
+patterns, and fresh input. Every returning device kept its stable ID and saved
+port, stayed dark/free, blocked preselection output, and required explicit
+reclaim. Zero reconnect produced only a Zero add and left legacy plus Arc
+uninterrupted. All three released independently. `SIGKILL` of the one shared
+PlugData PID produced three expiries, visible all-device darkness, and free
+port `0` on every route. A fresh one-process host started fail-closed,
+explicitly restored all patterns and exact inputs, and completed final
+all-dark/free release. SteamOS remained read-only and SerialOSC stayed active
+with `NRestarts=0`.
+
+Deck Bitwig, dock/lifecycle, and remaining matrix rows are still open. The
+package therefore remains a `lease-candidate`.
 
 ## Device matrix
 

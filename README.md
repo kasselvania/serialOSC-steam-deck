@@ -6,7 +6,7 @@ Rootless, click-to-install [SerialOSC](https://github.com/monome/serialosc) pack
 
 This development branch packages the opt-in leased-destination fork at exact revision `7187832c349202b1a94a9b10080ae57d40069946`. The lease protocol lets an aware client renew its ownership of a Grid or Arc callback. If the client or plug-in host dies, SerialOSC expires the lease, darkens that device, and frees its destination. Clients that never send `/sys/lease/*` retain the traditional SerialOSC behavior.
 
-The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed direct-protocol and complete single-device PlugData standalone slices for the legacy 128, Zero/256, and four-ring Arc, including hotplug and host death, plus all three bounded pair lanes. Zero-plus-Arc has a documented dock/power boundary: boot-inserting Zero physically resets Arc, after which both devices recover dark/free and require explicit reclaim; uninterrupted Arc continuity is not claimed. The candidate remains deliberately labeled `lease-candidate` until all-three shared-host, Bitwig, and the remaining Deck lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
+The fork has completed macOS standalone and Bitwig host-death acceptance. The exact x86-64 SteamOS candidate has also passed direct-protocol and complete single-device PlugData standalone slices for the legacy 128, Zero/256, and four-ring Arc, including hotplug and host death, all three bounded pair lanes, and the all-three single-shared-host lane. The earlier Zero-triggered Arc reset remains a documented intermittent dock boundary; the later M4 Zero reconnect was clean and preserved both survivors. The candidate remains deliberately labeled `lease-candidate` until Deck Bitwig and the remaining lifecycle matrix pass. The latest public release remains the previously accepted upstream SerialOSC 1.4.7 package.
 
 ## Script contract
 
@@ -163,6 +163,23 @@ This accepts M3 routing and bounded recovery, not uninterrupted Arc continuity
 during Zero boot insertion. On this dock, connect Zero first and Arc afterward.
 Final release left both devices dark/free; SteamOS remained read-only and
 SerialOSC retained zero restarts.
+
+The all-three M4 lane then passed with one PlugData PID opening both live
+patches and owning every Grid/Arc discovery, callback, and control port.
+Legacy, Zero, and Arc renewed isolated leases on `17780`, `17781`, and `17782`,
+displayed distinct patterns, and produced exact routed input. Each device was
+unplugged and reconnected in turn; both survivors retained their leases,
+patterns, and fresh input. Each returning device used its same stable ID and
+saved port, stayed dark/free, blocked preselection output, and required
+explicit reclaim. The Zero reconnect in this run produced only a Zero USB add
+and left legacy and Arc uninterrupted, showing that the earlier reset is not
+inevitable and must be treated as intermittent dock behavior. Each device
+released independently. Killing the one
+shared PlugData PID left all three leases briefly active; SerialOSC then logged
+three expiries, visibly darkened both Grids and every Arc ring, and returned
+every route to port `0`. A fresh shared host started fail-closed, explicitly
+restored all three patterns and exact inputs, and completed final all-dark
+release. SteamOS remained read-only and SerialOSC retained zero restarts.
 
 ## SteamOS safety boundary
 

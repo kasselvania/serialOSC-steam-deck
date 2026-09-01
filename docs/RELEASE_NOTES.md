@@ -108,6 +108,18 @@ continuity during Zero insertion. Connect Zero first and Arc afterward on this
 dock. Final release left both dark/free; SteamOS remained read-only and
 SerialOSC retained zero restarts.
 
+The all-three M4 row then passed with one PlugData PID owning both live patches
+and every Grid/Arc workbench port. Separate `17780`, `17781`, and `17782`
+leases, distinguishable output, and exact routed input stayed isolated. Each
+device hotplug preserved both survivors; returning devices stayed dark/free
+and blocked output until explicit reclaim. Zero reconnect was clean and did
+not remove legacy or Arc, showing the earlier dock reset is intermittent. Each
+device released independently. Killing the one shared host caused three lease
+expiries, visible darkness across both Grids and every Arc ring, and free port
+`0` on all routes. A fresh shared host started fail-closed, explicitly restored
+all patterns and input, and completed final all-dark/free release. SteamOS
+remained read-only and SerialOSC retained zero restarts.
+
 This is partial candidate evidence, not SteamOS release acceptance.
 
 ## Required SteamOS acceptance
@@ -116,11 +128,17 @@ This is partial candidate evidence, not SteamOS release acceptance.
 - Verify glibc ceiling, host runtime linkage, checksums, receipt, rootless service, and SteamOS read-only state.
 - Verify non-lease discovery and device operation remain compatible.
 - Verify lease capability, claim/takeover, renewal, orderly dark/release, and automatic expiry.
-- Verify all three devices, using the documented Zero-first connection order
-  and preserving the Zero-boot dock-reset boundary in the result.
+- Verify all three devices while retaining both the earlier Zero-triggered Arc
+  reset and the later clean M4 Zero reconnect in the dock evidence.
 - Verify standalone PlugData and PlugData CLAP hosted in Bitwig.
-- Kill the exact host process while all three devices are leased; require automatic darkness and free-state recovery.
+- Kill the exact shared host process while all three devices are leased;
+  require automatic darkness, free-state recovery, and a fresh host that makes
+  no claim before explicit operator action.
 - Verify unplug/replug, dock behavior, and survivor isolation.
+
+The all-three standalone, hotplug, independent-release, and shared-host-death
+criteria now pass for the exact pinned candidate. Deck Bitwig and the remaining
+lifecycle rows do not yet pass.
 
 Only after the machine evidence and the user's physical observations agree should the package channel change from `lease-candidate` to an accepted release.
 
